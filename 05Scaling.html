@@ -1,0 +1,3562 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font:
+          14px -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: #faf9f5;
+        color: #141413;
+      }
+      img {
+        max-width: 100%;
+      }
+      [hidden]:not([hidden="until-found" i]) {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <title>Zero to a Million Users</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #eef1f4;
+        --surface: #ffffff;
+        --sunk: #e3e8ed;
+        --ink: #15202b;
+        --muted: #56636f;
+        --rule: #d3dae1;
+        --line: #8795a2;
+        --accent: #0e7c7b;
+        --accent-soft: #d7efee;
+        --warn: #b45a12;
+        --warn-soft: #fbe9d8;
+        --c-client-f: #e7ebef;
+        --c-client-s: #56636f;
+        --c-lb-f: #ede8ff;
+        --c-lb-s: #6546d6;
+        --c-app-f: #e3ecff;
+        --c-app-s: #2d5fc4;
+        --c-db-f: #dff3e7;
+        --c-db-s: #23845a;
+        --c-cache-f: #ffe7de;
+        --c-cache-s: #c94c25;
+        --c-cdn-f: #d9f1f1;
+        --c-cdn-s: #0e8080;
+        --c-mq-f: #fff0d3;
+        --c-mq-s: #a8701a;
+        --display:
+          "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui,
+          sans-serif;
+        --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+        --mono:
+          "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          color-scheme: dark;
+          --bg: #0f151b;
+          --surface: #172029;
+          --sunk: #1d2833;
+          --ink: #e3e9ef;
+          --muted: #98a5b1;
+          --rule: #2a3643;
+          --line: #6a7988;
+          --accent: #4cc8c4;
+          --accent-soft: #12302f;
+          --warn: #f0a060;
+          --warn-soft: #35240f;
+          --c-client-f: #202a34;
+          --c-client-s: #94a2af;
+          --c-lb-f: #241e44;
+          --c-lb-s: #a48fff;
+          --c-app-f: #162844;
+          --c-app-s: #76a0ff;
+          --c-db-f: #132e1f;
+          --c-db-s: #52c68a;
+          --c-cache-f: #371c13;
+          --c-cache-s: #ff8b64;
+          --c-cdn-f: #0f2f2f;
+          --c-cdn-s: #41c9c9;
+          --c-mq-f: #36290e;
+          --c-mq-s: #e7ab48;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0f151b;
+        --surface: #172029;
+        --sunk: #1d2833;
+        --ink: #e3e9ef;
+        --muted: #98a5b1;
+        --rule: #2a3643;
+        --line: #6a7988;
+        --accent: #4cc8c4;
+        --accent-soft: #12302f;
+        --warn: #f0a060;
+        --warn-soft: #35240f;
+        --c-client-f: #202a34;
+        --c-client-s: #94a2af;
+        --c-lb-f: #241e44;
+        --c-lb-s: #a48fff;
+        --c-app-f: #162844;
+        --c-app-s: #76a0ff;
+        --c-db-f: #132e1f;
+        --c-db-s: #52c68a;
+        --c-cache-f: #371c13;
+        --c-cache-s: #ff8b64;
+        --c-cdn-f: #0f2f2f;
+        --c-cdn-s: #41c9c9;
+        --c-mq-f: #36290e;
+        --c-mq-s: #e7ab48;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 17px;
+        line-height: 1.62;
+        padding-inline: 20px;
+        padding-block: 0 64px;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--display);
+        line-height: 1.12;
+        text-wrap: balance;
+        margin: 0;
+      }
+      h2 {
+        font-size: clamp(28px, 4.2vw, 38px);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      h3 {
+        font-size: 19px;
+        font-weight: 700;
+        margin-top: 28px;
+        margin-bottom: 6px;
+      }
+      p {
+        margin: 0 0 12px;
+      }
+      ul,
+      ol {
+        margin: 0 0 12px;
+        padding-left: 22px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      li::marker {
+        color: var(--muted);
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.84em;
+      }
+      code {
+        background: var(--sunk);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      b,
+      strong {
+        font-weight: 600;
+      }
+
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 56px;
+      }
+      @media (max-width: 960px) {
+        .wrap {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .rail {
+          display: none;
+        }
+      }
+
+      /* hero */
+      .hero {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-block: 48px 28px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 40px;
+        align-items: end;
+      }
+      @media (max-width: 860px) {
+        .hero {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 20px;
+        }
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: clamp(44px, 7.4vw, 84px);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 0.95;
+      }
+      h1 .big {
+        color: var(--accent);
+      }
+      .hero .intro {
+        font-size: 18px;
+        margin-top: 18px;
+        max-width: 34em;
+        color: var(--ink);
+      }
+      .stairs {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .stairs text {
+        font-family: var(--mono);
+      }
+      .stairs .st {
+        fill: var(--sunk);
+        stroke: var(--rule);
+      }
+      .stairs a:hover .st,
+      .stairs a:focus .st {
+        fill: var(--accent-soft);
+        stroke: var(--accent);
+      }
+      .stairs .sn {
+        font-size: 13px;
+        font-weight: 600;
+        fill: var(--ink);
+      }
+      .stairs .sl {
+        font-size: 11.5px;
+        fill: var(--muted);
+      }
+      .stairs .star {
+        font-size: 13px;
+        fill: var(--warn);
+      }
+      .stairs .cap {
+        font-size: 11px;
+        fill: var(--muted);
+      }
+
+      .legend {
+        max-width: 1120px;
+        margin: 0 auto 36px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        align-items: center;
+        border-top: 1px solid var(--rule);
+        padding-top: 16px;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid;
+        vertical-align: -2px;
+        margin-right: 6px;
+      }
+
+      /* rail */
+      .rail {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        align-self: start;
+        padding-top: 8px;
+        max-height: 100vh;
+        overflow: auto;
+      }
+      .rail ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-family: var(--display);
+        font-size: 15px;
+      }
+      .rail li {
+        margin: 0;
+      }
+      .rail a {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 6px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        color: var(--muted);
+        text-decoration: none;
+        line-height: 1.3;
+      }
+      .rail a span {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding-top: 2px;
+      }
+      .rail a:hover {
+        background: var(--sunk);
+        color: var(--ink);
+      }
+      .rail a.on {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      .rail .head {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px 8px;
+      }
+
+      main {
+        min-width: 0;
+      }
+      .step {
+        padding-block: 40px;
+        border-top: 1px solid var(--rule);
+      }
+      .step:first-child {
+        border-top: 0;
+        padding-top: 4px;
+      }
+      .step > * {
+        max-width: 720px;
+      }
+      .step > figure {
+        max-width: 760px;
+      }
+      .snum {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .flag {
+        color: var(--warn);
+        background: var(--warn-soft);
+        padding: 2px 8px;
+        border-radius: 99px;
+        letter-spacing: 0.02em;
+        text-transform: none;
+      }
+      .lede {
+        font-size: 19px;
+        margin-top: 12px;
+        color: var(--ink);
+      }
+
+      .eli5 {
+        background: var(--accent-soft);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 22px 0;
+      }
+      .eli5 p:last-child {
+        margin-bottom: 0;
+      }
+      .tag {
+        display: block;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+      .beyond {
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 24px 0 8px;
+      }
+      .beyond .tag {
+        color: var(--muted);
+      }
+      .beyond ul:last-child,
+      .beyond p:last-child {
+        margin-bottom: 0;
+      }
+      .handoff {
+        margin-top: 22px;
+        font-family: var(--display);
+        font-size: 16px;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .handoff b {
+        color: var(--warn);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      figure {
+        margin: 22px 0;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 16px 12px 10px;
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      figcaption {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        padding: 8px 8px 2px;
+        line-height: 1.5;
+      }
+      .dg {
+        overflow-x: auto;
+      }
+      .dg svg {
+        display: block;
+        width: 100%;
+        min-width: 540px;
+        max-width: 680px;
+        margin: 0 auto;
+        height: auto;
+      }
+      svg .n {
+        stroke-width: 1.6;
+      }
+      svg .t-client {
+        fill: var(--c-client-f);
+        stroke: var(--c-client-s);
+      }
+      svg .t-lb {
+        fill: var(--c-lb-f);
+        stroke: var(--c-lb-s);
+      }
+      svg .t-app {
+        fill: var(--c-app-f);
+        stroke: var(--c-app-s);
+      }
+      svg .t-db {
+        fill: var(--c-db-f);
+        stroke: var(--c-db-s);
+      }
+      svg .t-cache {
+        fill: var(--c-cache-f);
+        stroke: var(--c-cache-s);
+      }
+      svg .t-cdn {
+        fill: var(--c-cdn-f);
+        stroke: var(--c-cdn-s);
+      }
+      svg .t-mq {
+        fill: var(--c-mq-f);
+        stroke: var(--c-mq-s);
+      }
+      svg .slot {
+        fill: var(--surface);
+        stroke: var(--c-mq-s);
+        stroke-width: 1.2;
+      }
+      svg .zone {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.3;
+        stroke-dasharray: 5 5;
+      }
+      svg .zl {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        fill: var(--muted);
+      }
+      svg .nl {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 13.5px;
+        fill: var(--ink);
+      }
+      svg .ns {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg .nt {
+        font-family: var(--mono);
+        font-size: 11px;
+        fill: var(--muted);
+      }
+      svg .ed {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.6;
+      }
+      svg .ed.dash {
+        stroke-dasharray: 5 4;
+      }
+      svg .ah {
+        fill: var(--line);
+      }
+      svg .el {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--ink);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 5px;
+        stroke-linejoin: round;
+      }
+
+      /* latency bars */
+      .lat {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px 12px;
+        align-items: center;
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 6px 8px 4px;
+      }
+      .lat .bar {
+        height: 14px;
+        border-radius: 4px;
+        background: var(--c-cdn-s);
+        opacity: 0.85;
+      }
+      .lat .v {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+
+      /* sharding tables */
+      .shard {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        justify-content: center;
+        padding: 8px 4px;
+      }
+      .tbl {
+        display: grid;
+        border: 1.5px solid var(--c-db-s);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--c-db-f);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .tbl div {
+        padding: 3px 8px;
+        border-top: 1px solid var(--rule);
+        white-space: nowrap;
+      }
+      .tbl div.h {
+        border-top: 0;
+        font-weight: 600;
+        background: var(--surface);
+        color: var(--ink);
+      }
+      .tbl .dim {
+        color: var(--muted);
+      }
+      .arrow {
+        font-family: var(--display);
+        font-size: 26px;
+        color: var(--line);
+      }
+      .tname {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      /* exchange cards */
+      .xgrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      @media (max-width: 620px) {
+        .xgrid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .x {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .x h4 {
+        font-family: var(--display);
+        font-size: 17px;
+        margin: 0 0 4px;
+      }
+      .x .rule {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--c-mq-s);
+        margin-bottom: 6px;
+      }
+      .x p {
+        font-size: 15.5px;
+        margin: 0;
+      }
+      .x .src {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-top: 8px;
+      }
+
+      /* compare table */
+      .tw {
+        overflow-x: auto;
+        margin: 16px 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 15px;
+        min-width: 560px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+      th {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td:first-child {
+        font-family: var(--display);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      /* quiz */
+      details {
+        border-top: 1px solid var(--rule);
+        padding: 12px 0;
+      }
+      details:last-of-type {
+        border-bottom: 1px solid var(--rule);
+      }
+      summary {
+        cursor: pointer;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 17px;
+        list-style: none;
+        display: flex;
+        gap: 10px;
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::before {
+        content: "+";
+        font-family: var(--mono);
+        color: var(--accent);
+        width: 14px;
+        flex: none;
+      }
+      details[open] summary::before {
+        content: "–";
+      }
+      details p {
+        margin: 8px 0 0 24px;
+      }
+
+      .sources {
+        font-size: 15px;
+      }
+      .sources li {
+        margin-bottom: 4px;
+      }
+      .foot {
+        max-width: 720px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 28px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .rail a {
+          transition: background 0.15s;
+        }
+      }
+    </style>
+
+    <header class="hero">
+      <div>
+        <div class="eyebrow">
+          HLD lecture 5 · Concept &amp;&amp; Coding · study notes
+        </div>
+        <h1>Zero to a <span class="big">Million</span> Users</h1>
+        <p class="intro">
+          You start with one computer doing everything. As users arrive, it
+          breaks in a new place each time, and you fix that place. The lecture
+          walks through nine fixes, in order. Each one solves the last step's
+          problem and exposes the next.
+        </p>
+      </div>
+      <div class="dg" style="overflow: visible">
+        <svg
+          class="stairs"
+          id="stairs"
+          viewBox="0 0 600 300"
+          role="img"
+          aria-label="Staircase of nine scaling steps, from single server to database sharding"
+        ></svg>
+      </div>
+    </header>
+
+    <div class="legend" aria-label="Diagram colour key">
+      <span>Colour key for every diagram:</span>
+      <span
+        ><i
+          style="background: var(--c-client-f); border-color: var(--c-client-s)"
+        ></i
+        >Client / user</span
+      >
+      <span
+        ><i style="background: var(--c-lb-f); border-color: var(--c-lb-s)"></i
+        >Load balancer</span
+      >
+      <span
+        ><i style="background: var(--c-app-f); border-color: var(--c-app-s)"></i
+        >App server</span
+      >
+      <span
+        ><i style="background: var(--c-db-f); border-color: var(--c-db-s)"></i
+        >Database</span
+      >
+      <span
+        ><i
+          style="background: var(--c-cache-f); border-color: var(--c-cache-s)"
+        ></i
+        >Cache</span
+      >
+      <span
+        ><i style="background: var(--c-cdn-f); border-color: var(--c-cdn-s)"></i
+        >CDN</span
+      >
+      <span
+        ><i style="background: var(--c-mq-f); border-color: var(--c-mq-s)"></i
+        >Queue</span
+      >
+      <span>★ = the lecturer marked it as important</span>
+    </div>
+
+    <div class="wrap">
+      <nav class="rail" aria-label="Steps">
+        <p class="head">The nine steps</p>
+        <ol id="rail">
+          <li>
+            <a href="#s1"><span>01</span>Single server</a>
+          </li>
+          <li>
+            <a href="#s2"><span>02</span>Split app &amp; DB</a>
+          </li>
+          <li>
+            <a href="#s3"><span>03</span>Load balancer + app servers</a>
+          </li>
+          <li>
+            <a href="#s4"><span>04</span>DB replication</a>
+          </li>
+          <li>
+            <a href="#s5"><span>05</span>Cache ★</a>
+          </li>
+          <li>
+            <a href="#s6"><span>06</span>CDN ★★</a>
+          </li>
+          <li>
+            <a href="#s7"><span>07</span>Data centres</a>
+          </li>
+          <li>
+            <a href="#s8"><span>08</span>Message queue ★★</a>
+          </li>
+          <li>
+            <a href="#s9"><span>09</span>DB scaling ★★</a>
+          </li>
+          <li>
+            <a href="#final"><span>→</span>Full picture</a>
+          </li>
+          <li>
+            <a href="#revise"><span>?</span>Revision</a>
+          </li>
+        </ol>
+      </nav>
+
+      <main>
+        <!-- ───────────── STEP 1 ───────────── -->
+        <section class="step" id="s1">
+          <div class="snum">Step 1 of 9</div>
+          <h2>Single server</h2>
+          <p class="lede">
+            Everything lives on one machine: your code, your database, your
+            files. This is how every college project starts, and it's fine when
+            you have zero users.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A tiny food stall with one person. They take orders, cook, and
+              keep the groceries under the counter. It works for ten customers a
+              day. At a thousand, the cook, the counter and the storage all get
+              overwhelmed together, and if that one person falls sick the stall
+              closes.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d1"></div>
+            <figcaption>
+              The client (a browser or mobile app) talks straight to one server.
+              That server runs the application code and hosts the database on
+              the same machine.
+            </figcaption>
+          </figure>
+
+          <h3>How it works</h3>
+          <ol>
+            <li>
+              The user types your domain name. <b>DNS</b> (the internet's phone
+              book) turns it into your server's IP address. DNS is usually a
+              paid third-party service, not something you run.
+            </li>
+            <li>
+              The client sends an HTTP request (for example
+              <code>GET /tickets</code>) to that IP.
+            </li>
+            <li>
+              The server runs the business logic, reads or writes the database
+              on the same box, and sends back HTML or JSON.
+            </li>
+          </ol>
+
+          <h3>Why it stops working</h3>
+          <ul>
+            <li>
+              <b>Single point of failure.</b> One crash, reboot or deploy takes
+              the whole product offline.
+            </li>
+            <li>
+              <b>Everything fights for the same CPU, RAM and disk.</b> A heavy
+              database query slows down every API call.
+            </li>
+            <li>
+              <b>You can't scale the parts separately.</b> If only the database
+              needs more memory, you still have to upgrade the whole machine.
+            </li>
+          </ul>
+          <div class="handoff">
+            <b>What breaks next →</b> the app and the database need to stop
+            sharing one machine.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 2 ───────────── -->
+        <section class="step" id="s2">
+          <div class="snum">Step 2 of 9</div>
+          <h2>Separate the application server and the DB server</h2>
+          <p class="lede">
+            Put the application on one machine and the database on another. The
+            lecture names these two layers the <b>mid tier</b> (business logic)
+            and the <b>data tier</b> (storage).
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              The stall moves its groceries into a separate storeroom next door
+              with its own keeper. The cook has more space to cook, and the
+              storeroom can grow without touching the kitchen.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d2"></div>
+            <figcaption>
+              Two machines, two jobs. The client never talks to the DB directly;
+              only the application server does.
+            </figcaption>
+          </figure>
+
+          <h3>Why this helps</h3>
+          <ul>
+            <li>
+              <b>Independent scaling.</b> The app tier is CPU-heavy (running
+              code). The data tier is memory- and disk-heavy (indexes, storage).
+              Now you size each machine for its own job.
+            </li>
+            <li>
+              <b>No resource fights.</b> A slow query no longer starves the web
+              process of CPU.
+            </li>
+            <li>
+              <b>Security.</b> The DB machine can sit on a private network with
+              no public access. Only the app server can reach it.
+            </li>
+          </ul>
+
+          <h3>Why it stops working</h3>
+          <p>
+            There is still exactly <b>one</b> application server. It can only
+            handle so many requests per second. If it can do about 1,000
+            requests a minute, request number 1,001 gets slow or is dropped. And
+            if it crashes, the site is down.
+          </p>
+          <div class="handoff">
+            <b>What breaks next →</b> one application server is both a capacity
+            limit and a single point of failure.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 3 ───────────── -->
+        <section class="step" id="s3">
+          <div class="snum">Step 3 of 9</div>
+          <h2>Load balancer + multiple app servers</h2>
+          <p class="lede">
+            Run several copies of the application (App server 1, 2 … N) and put
+            a <b>load balancer</b> in front. The client only ever talks to the
+            load balancer, and the load balancer decides which app server gets
+            each request.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              The stall becomes a restaurant with several cooks. A host stands
+              at the door and sends each new customer to whichever cook is free.
+              Customers never walk into the kitchen. If one cook goes home sick,
+              the host stops sending people to them, and the restaurant stays
+              open.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d3"></div>
+            <figcaption>
+              The load balancer has the only public IP. App servers live on
+              private IPs, so the internet cannot call them directly.
+            </figcaption>
+          </figure>
+
+          <h3>What the lecture stresses</h3>
+          <ul>
+            <li>
+              <b>Distributing traffic.</b> As the name says, the load balancer
+              spreads requests evenly so no single server is overloaded.
+            </li>
+            <li>
+              <b>Security and privacy.</b> The load balancer faces the internet.
+              The app servers have <b>private IPs</b>, so a client (or an
+              attacker) cannot call them directly. That adds a layer of
+              protection.
+            </li>
+            <li>
+              <b>Failover.</b> If App server 1 dies, the load balancer routes
+              its traffic to the others and the system stays up. If traffic
+              grows, add App server N+1 and register it with the load balancer.
+            </li>
+          </ul>
+
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                <b>Make the web tier stateless.</b> If server 1 keeps a user's
+                login session in its own memory, that user breaks when the next
+                request lands on server 2. The fix is to store session data in a
+                shared store (Redis or a NoSQL DB). Then any server can handle
+                any request, and you can add or remove servers freely. The other
+                option, "sticky sessions" that pin a user to one server, works
+                against the whole point.
+              </li>
+              <li>
+                <b>Health checks.</b> The load balancer pings each server (for
+                example <code>GET /health</code> every few seconds) and stops
+                routing to one that fails.
+              </li>
+              <li>
+                <b>Algorithms.</b> Round robin, weighted round robin, least
+                connections, IP hash. These are covered in HLD lecture 17 (Load
+                Balancer and Different Algorithms).
+              </li>
+              <li>
+                <b>The load balancer itself can fail.</b> Real setups run a pair
+                (active–passive) or use a managed cloud load balancer that is
+                redundant internally.
+              </li>
+            </ul>
+          </div>
+          <div class="handoff">
+            <b>What breaks next →</b> the app tier now scales, but every server
+            still hits one database. If it dies, everything dies.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 4 ───────────── -->
+        <section class="step" id="s4">
+          <div class="snum">
+            Step 4 of 9
+            <span class="flag">circled on the whiteboard: master–slave</span>
+          </div>
+          <h2>Database replication</h2>
+          <p class="lede">
+            Keep several copies of the database. One <b>master</b> takes every
+            write (create, update, delete). One or more <b>slaves</b> (also
+            called replicas) hold copies and serve the reads. There can be many
+            slaves.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A teacher keeps the official register and is the only one allowed
+              to write in it. Every evening, photocopies go to several
+              assistants. When students ask "am I marked present?", any
+              assistant can answer from their copy. If one assistant is absent,
+              others answer. If the teacher is absent, one assistant is promoted
+              to keep the official register.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d4"></div>
+            <figcaption>
+              Writes go to the master. Reads go to the slaves. The master copies
+              every change to each slave.
+            </figcaption>
+          </figure>
+
+          <h3>Why this split works</h3>
+          <p>
+            Most apps read far more than they write. Think of how many times you
+            scroll a feed compared to how often you post. With one master and
+            many slaves, you can add read capacity just by adding slaves.
+          </p>
+
+          <h3>Failure cases the lecture walks through</h3>
+          <ul>
+            <li>
+              <b>A slave dies.</b> Reads go to the other slaves. If it was the
+              only slave, the master serves reads temporarily. A new slave is
+              started to replace it.
+            </li>
+            <li>
+              <b>The master dies.</b> A slave is <b>promoted</b> to become the
+              new master and starts taking writes. A fresh slave is then added.
+            </li>
+            <li>
+              This is the same idea as step 3. There, one app server failing
+              didn't take the system down. Here, one DB node failing doesn't
+              either.
+            </li>
+          </ul>
+
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                <b>Replication lag.</b> Copying to slaves is usually
+                <em>asynchronous</em>, so a slave can be a few milliseconds
+                (sometimes seconds) behind. A user who updates their profile and
+                immediately reloads might read the old value from a slave. A
+                common fix, called <b>read-your-writes</b>, sends that user's
+                reads to the master for a short time after they write.
+              </li>
+              <li>
+                <b>Sync vs async.</b> Synchronous replication waits for the
+                slave to confirm each write. That's safer but slower. Async is
+                faster, but a master crash can lose the last few writes that
+                hadn't reached a slave yet. That's why promoting a slave
+                sometimes needs a data-recovery step.
+              </li>
+              <li>
+                Newer docs say <b>primary / replica</b> instead of master /
+                slave. Same idea.
+              </li>
+            </ul>
+          </div>
+          <div class="handoff">
+            <b>What breaks next →</b> the system survives failures, but every
+            read still goes to a database, which is slow.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 5 ───────────── -->
+        <section class="step" id="s5">
+          <div class="snum">
+            Step 5 of 9 <span class="flag">★ important</span>
+          </div>
+          <h2>Cache</h2>
+          <p class="lede">
+            A DB call is a network hop plus disk work, which makes it expensive.
+            The lecture says to treat database operations as
+            <b>very, very expensive</b>. A cache (for example <b>Redis</b>)
+            keeps recently used data in memory so most requests never reach the
+            DB.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              The chef keeps today's most-used ingredients on the counter within
+              arm's reach, instead of walking to the storeroom for every order.
+              Each item gets a "use by" label (the TTL). When the label expires,
+              it goes in the bin, and the next time someone needs it the chef
+              fetches a fresh one from the storeroom.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d5"></div>
+            <figcaption>
+              The app checks the cache first. It only goes to the DB on a miss,
+              then saves the result in the cache for next time.
+            </figcaption>
+          </figure>
+
+          <h3>The read flow, step by step</h3>
+          <ol>
+            <li>A request arrives at an app server.</li>
+            <li>The app asks the cache first.</li>
+            <li>
+              <b>Cache hit:</b> the data is there, so return it immediately. No
+              DB call.
+            </li>
+            <li>
+              <b>Cache miss:</b> the data isn't there, so read it from the DB,
+              <b>write it into the cache</b>, then return it.
+            </li>
+            <li>
+              The next request for the same data is a hit. Performance goes up
+              and DB calls are saved.
+            </li>
+          </ol>
+
+          <h3>TTL (Time To Live)</h3>
+          <p>
+            Every cached item gets an expiry, set by the application. It could
+            be 24 hours, 48 hours or 7 days, depending on how fresh the data
+            needs to be. After the TTL passes, the item is removed. The next
+            request misses, fetches fresh data from the DB and stores it again
+            with a new TTL. Without a TTL, the cache would serve stale data
+            forever.
+          </p>
+
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                This pattern is called <b>cache-aside</b> (or lazy loading): the
+                app manages the cache itself. Other strategies such as
+                read-through, write-through, write-around and write-back are
+                covered in HLD lectures 18–19.
+              </li>
+              <li>
+                <b>When to cache:</b> data that is read often and changes rarely
+                (product details, user profiles, config). Don't use a cache as
+                the only copy of important data, because memory is lost on
+                restart.
+              </li>
+              <li>
+                <b>Consistency:</b> when the DB row changes, delete or update
+                the cached copy. Otherwise users see old data until the TTL runs
+                out.
+              </li>
+              <li>
+                <b>Eviction:</b> memory is limited. When it's full, something
+                has to go. LRU (least recently used) is the usual choice; LFU
+                and FIFO also exist.
+              </li>
+              <li>
+                <b>A single cache node is a single point of failure.</b> Run
+                several cache nodes, and over-provision memory a little.
+              </li>
+            </ul>
+          </div>
+          <div class="handoff">
+            <b>What breaks next →</b> dynamic data is fast now, but users far
+            from your server still wait for images, CSS and videos to cross the
+            planet.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 6 ───────────── -->
+        <section class="step" id="s6">
+          <div class="snum">
+            Step 6 of 9 <span class="flag">★★ very important</span>
+          </div>
+          <h2>CDN: Content Delivery Network</h2>
+          <p class="lede">
+            A CDN is a network of servers spread across the world, called
+            <b>edge nodes</b> or PoPs. They cache your <b>static</b> files close
+            to users. The lecture's key line:
+            <b>a CDN does caching, but not everything that caches is a CDN.</b>
+            Redis caches too, but it isn't a CDN. A CDN also adds geographic
+            spread and security.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              One big warehouse in India, with customers in the USA, France and
+              Japan. Shipping every order from India is slow. So you open small
+              corner shops in each country, stocked with the popular items that
+              rarely change. Customers buy from the shop down the road. If the
+              shop doesn't have something, it asks a nearby shop, and only then
+              orders from the warehouse, keeping a copy for the next customer.
+            </p>
+          </div>
+
+          <h3>The problem: distance is latency</h3>
+          <p>
+            The lecture puts the data centre in India and has users in several
+            countries. The farther the user, the longer each request–response
+            round trip takes:
+          </p>
+          <figure>
+            <div class="lat" id="lat"></div>
+            <figcaption>
+              The lecturer's illustrative numbers, drawn to scale. The ordering
+              is the point. Real round trips are much larger: India → USA is
+              typically around 200–300 ms.
+            </figcaption>
+          </figure>
+          <p>
+            The user near the data centre gets a fast response, but you have
+            users all over the world. That's the latency problem a CDN solves.
+          </p>
+
+          <figure>
+            <div class="dg" data-d="d6"></div>
+            <figcaption>
+              Each region has a CDN node. Users hit their nearest node. The
+              origin server in India is only contacted on a miss.
+            </figcaption>
+          </figure>
+
+          <h3>How a request flows</h3>
+          <ol>
+            <li>
+              The client requests a static file, for example
+              <code>https://cdn.site.com/logo.png</code>. The CDN's routing
+              sends it to the <b>nearest</b> node.
+            </li>
+            <li>
+              <b>Hit:</b> the node has the file, so it returns it immediately.
+            </li>
+            <li>
+              <b>Miss:</b> the node asks a <b>neighbouring CDN node</b>. If that
+              one has it, it's copied over.
+            </li>
+            <li>
+              If no node has it, the request goes to the <b>origin server</b>.
+              The file comes back, the CDN <b>stores it</b> (with a TTL), and
+              returns it.
+            </li>
+            <li>Later users in that region get it straight from the edge.</li>
+          </ol>
+
+          <h3>What goes on a CDN</h3>
+          <p>
+            Static content that changes rarely:
+            <b>HTML pages, CSS, JavaScript, images, video</b>. Personalised,
+            fast-changing API responses usually stay on your servers and the
+            Redis cache.
+          </p>
+
+          <h3>Where it sits</h3>
+          <p>
+            The client goes to the CDN <b>before</b> it even reaches the load
+            balancer. Static assets come from the CDN, and only dynamic requests
+            travel on to the load balancer and app servers.
+          </p>
+
+          <h3>Three benefits the lecture lists</h3>
+          <ul>
+            <li>
+              <b>Performance:</b> lower latency, because content is served from
+              nearby.
+            </li>
+            <li>
+              <b>Security:</b> clients don't hit your origin directly. CDNs
+              absorb <b>DDoS</b> attacks, because the flood is spread across
+              hundreds of edge nodes. They can also detect bots and block them
+              before they reach the origin.
+            </li>
+            <li>
+              <b>Cost:</b> the origin handles far less traffic, so you need
+              fewer servers.
+            </li>
+          </ul>
+
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                <b>Invalidation:</b> to push a new CSS file before the TTL runs
+                out, either call the CDN's purge API or, more often,
+                <b>version the URL</b> (<code>app.v42.css</code>). A new URL is
+                a guaranteed cache miss.
+              </li>
+              <li>
+                <b>Cost:</b> you pay per GB served. Don't put rarely accessed
+                files on a CDN.
+              </li>
+              <li>
+                <b>Fallback:</b> if the CDN has an outage, clients should be
+                able to fetch from the origin.
+              </li>
+              <li>
+                Well-tuned CDNs commonly reach 90%+ hit ratios on static
+                content. Examples: Cloudflare, Akamai, AWS CloudFront, Fastly.
+              </li>
+            </ul>
+          </div>
+          <div class="handoff">
+            <b>What breaks next →</b> static files are close to users, but all
+            the dynamic work still happens in one data centre. If India goes
+            down, everyone goes down.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 7 ───────────── -->
+        <section class="step" id="s7">
+          <div class="snum">Step 7 of 9</div>
+          <h2>Multiple data centres</h2>
+          <p class="lede">
+            Copy the whole stack (app servers, cache, master and slave DBs) into
+            several data centres, for example India and the US. A
+            <b>geo-routing</b> load balancer sends each user to their nearest
+            data centre.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              The restaurant opens a full branch in another country, with its
+              own cooks, counter and storeroom. Customers go to the branch
+              nearest them. If one branch floods, the head office sends everyone
+              to the other branch until it reopens. Every night the branches
+              swap their record books so both know the same things.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d7"></div>
+            <figcaption>
+              Each data centre has the setup from steps 3–5. The databases
+              replicate across regions, so either data centre can serve any
+              user.
+            </figcaption>
+          </figure>
+
+          <h3>How it works</h3>
+          <ul>
+            <li>
+              <b>Geo-routing:</b> the load balancer (in practice usually
+              <b>GeoDNS</b>) looks at where the request comes from and routes it
+              to the closest data centre. Indian users go to India, American
+              users go to the US.
+            </li>
+            <li>
+              <b>Inside each data centre</b> nothing changes: the load balancer
+              feeds the app servers, the app servers talk to the cache, writes
+              go to the master and reads go to the slaves.
+            </li>
+            <li>
+              <b>Failover:</b> if the India data centre goes down, the load
+              balancer sends <b>all</b> traffic to the US data centre.
+            </li>
+            <li>
+              For that to work, the US data centre must already have India's
+              data. That's why the databases <b>replicate between regions</b>.
+            </li>
+          </ul>
+
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                <b>Capacity:</b> each data centre must be able to take the
+                other's traffic during failover, or the surviving one gets
+                overwhelmed.
+              </li>
+              <li>
+                <b>Data sync is the hard part.</b> Cross-region replication is
+                slow (hundreds of ms), so it's usually async. You have to decide
+                what happens when both regions accept writes for the same
+                record. HLD lecture 14 (Active–Passive and Active–Active) covers
+                this in depth.
+              </li>
+              <li>
+                <b>Deployments:</b> keep every data centre on the same version
+                with automated deployment tools, or users see different
+                behaviour depending on location.
+              </li>
+            </ul>
+          </div>
+          <div class="handoff">
+            <b>What breaks next →</b> slow side-jobs (emails, notifications,
+            webhooks) still hold up the user's request.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 8 ───────────── -->
+        <section class="step" id="s8">
+          <div class="snum">
+            Step 8 of 9 <span class="flag">★★ very important</span>
+          </div>
+          <h2>Message queue</h2>
+          <p class="lede">
+            A queue sits between the part of the system that
+            <b>creates work</b> (the producer) and the part that
+            <b>does the work</b> (the consumer or subscriber). The producer
+            drops a message in and moves on immediately. This brings
+            <b>asynchronous</b> processing into the system. Popular choices:
+            <b>RabbitMQ</b> and <b>Kafka</b>.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A waiter doesn't stand at the stove waiting for the dish. They
+              clip the order ticket to the kitchen rail and go serve the next
+              table. Cooks pull tickets off the rail when they're free. If a
+              dish goes wrong, the ticket goes back on the rail to be cooked
+              again.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d8"></div>
+            <figcaption>
+              The producer publishes and returns to the user straight away. The
+              consumer processes the message later. On failure the message is
+              requeued and retried.
+            </figcaption>
+          </figure>
+
+          <h3>Why it matters: the lecture's example</h3>
+          <p>
+            A user places an order. After saving it you need to send a
+            notification, send an email and call a partner's webhook. These are
+            <b>heavy, slow operations</b>. If the request thread does them one
+            after another while the user waits, the thread is blocked and the
+            user stares at a spinner. The lecture calls that
+            <b>a very bad design</b>.
+          </p>
+          <p>
+            Instead, the app saves the order, pushes a message like
+            <code>{"event":"order_placed","id":123}</code> to the queue, and
+            responds to the user immediately. A subscriber reads the message and
+            sends the email in the background.
+          </p>
+          <ul>
+            <li>
+              <b>Faster responses:</b> the request doesn't wait for side-jobs.
+            </li>
+            <li>
+              <b>Retries:</b> if the consumer fails, the message can be
+              <b>requeued</b> and tried again. Nothing is lost.
+            </li>
+            <li>
+              <b>Decoupling:</b> producers and consumers scale independently. If
+              the queue grows, add more workers.
+            </li>
+            <li>
+              <b>Buffering spikes:</b> a sudden burst of orders piles up in the
+              queue instead of crashing the workers.
+            </li>
+          </ul>
+
+          <h3>RabbitMQ terminology</h3>
+          <p>
+            In RabbitMQ the producer doesn't write to a queue directly. It sends
+            to an <b>exchange</b>, and the exchange decides which queue or
+            queues get the message.
+          </p>
+          <figure>
+            <div class="dg" data-d="d9"></div>
+            <figcaption>
+              Producer → exchange → (bindings) → queues → subscribers.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Routing key:</b> a label the producer attaches to each message,
+              like an address on an envelope.
+            </li>
+            <li>
+              <b>Binding:</b> the link between an exchange and a queue. Each
+              binding has a <b>binding key</b>, which says what that queue wants
+              to receive.
+            </li>
+            <li>
+              <b>Exchange:</b> compares the message's routing key with each
+              binding key and delivers to the queues that match. Subscribers of
+              those queues then get the message.
+            </li>
+          </ul>
+
+          <h3>Exchange types</h3>
+          <div class="xgrid">
+            <div class="x">
+              <h4>1 · Direct</h4>
+              <div class="rule">routing key == binding key</div>
+              <p>
+                Exact match only. A message with key <code>email</code> goes
+                only to the queue bound with <code>email</code>. It's like a
+                letter addressed to one flat number.
+              </p>
+              <div class="src">in lecture</div>
+            </div>
+            <div class="x">
+              <h4>2 · Fanout</h4>
+              <div class="rule">ignore the key → every queue</div>
+              <p>
+                A copy goes to <b>every</b> bound queue (Q1, Q2, Q3 …). The
+                routing key is ignored. It's like a school-wide announcement.
+                Use it for broadcasts, for example "price changed" to all
+                services.
+              </p>
+              <div class="src">in lecture</div>
+            </div>
+            <div class="x">
+              <h4>3 · Topic</h4>
+              <div class="rule">wildcard pattern match</div>
+              <p>
+                Keys are dot-separated words. Bindings can use wildcards:
+                <code>*</code> matches exactly one word and
+                <code>#</code> matches zero or more.
+                <code>order.*.india</code> matches
+                <code>order.placed.india</code>. So topic is a
+                <b>wildcard</b> comparison, while direct is an
+                <b>exact</b> comparison.
+              </p>
+              <div class="src">in lecture</div>
+            </div>
+            <div class="x">
+              <h4>4 · Headers</h4>
+              <div class="rule">match on message headers</div>
+              <p>
+                Routes on header values (for example <code>format=pdf</code>)
+                instead of the routing key. Rarely used.
+              </p>
+              <div class="src">from RabbitMQ docs</div>
+            </div>
+          </div>
+
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                <b>RabbitMQ vs Kafka in one line each.</b> RabbitMQ is a smart
+                broker: it routes via exchanges, pushes messages to consumers
+                and deletes them once acknowledged. Kafka is a distributed,
+                append-only <b>log</b>: messages go to topics split into
+                partitions, consumers pull and track their own position
+                (offset), and messages are kept for days so they can be
+                replayed.
+              </li>
+              <li>
+                <b>Acknowledgements:</b> a consumer confirms (acks) a message
+                only after it has finished processing it. If it crashes before
+                acking, the broker redelivers the message. That means a message
+                can arrive twice, so consumers should be <b>idempotent</b> (see
+                HLD lecture 13).
+              </li>
+              <li>
+                Messages that keep failing go to a <b>dead-letter queue</b> so
+                they don't loop forever.
+              </li>
+              <li>
+                Full design of a queue system: HLD lecture 15 (Distributed
+                Messaging Queue).
+              </li>
+            </ul>
+          </div>
+          <div class="handoff">
+            <b>What breaks next →</b> data keeps growing. Eventually one master
+            DB can't hold it all or handle all the writes.
+          </div>
+        </section>
+
+        <!-- ───────────── STEP 9 ───────────── -->
+        <section class="step" id="s9">
+          <div class="snum">
+            Step 9 of 9 <span class="flag">★★ very important</span>
+          </div>
+          <h2>Database scaling</h2>
+          <p class="lede">
+            There are two ways to give the database more power: make the machine
+            <b>bigger</b> (vertical) or add <b>more machines</b> (horizontal).
+            Horizontal scaling for databases is implemented with
+            <b>sharding</b>.
+          </p>
+
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A phone book gets too thick to hold. <b>Vertical:</b> buy a bigger
+              table to rest it on, which only works up to a point.
+              <b>Horizontal:</b> split it into two books, A–P and Q–Z. Each book
+              is light, and you know which one to open by looking at the first
+              letter of the name.
+            </p>
+          </div>
+
+          <figure>
+            <div class="dg" data-d="d10"></div>
+            <figcaption>
+              Vertical: a bigger machine. Horizontal: more machines, each
+              holding part of the data.
+            </figcaption>
+          </figure>
+
+          <h3>Vertical scaling (scale up)</h3>
+          <ul>
+            <li>
+              Increase the capacity of existing DB servers: more CPU and more
+              RAM.
+            </li>
+            <li>
+              It's simple, because no code changes. But
+              <b>there is always a limit</b>: at some point you can't buy a
+              bigger CPU. It also gets very expensive, and it's still one
+              machine that can fail.
+            </li>
+          </ul>
+          <h3>Horizontal scaling (scale out)</h3>
+          <ul>
+            <li>
+              Add more database <b>nodes</b>, each holding part of the data.
+            </li>
+            <li>
+              It's harder to manage, but it has no fixed ceiling. The lecture's
+              conclusion: vertical has limits, horizontal keeps scaling.
+              Horizontal is implemented with sharding.
+            </li>
+          </ul>
+
+          <h3>Sharding: horizontal vs vertical</h3>
+          <p>
+            <b>Horizontal sharding (row-wise).</b> Take a table with 1,000 rows
+            and split the rows across tables on different machines. Every shard
+            has the <b>same columns</b> but <b>different rows</b>.
+          </p>
+          <figure>
+            <div class="shard">
+              <div>
+                <div class="tname">T1 · 1,000 rows</div>
+                <div class="tbl">
+                  <div class="h">id · name · …</div>
+                  <div>row 1</div>
+                  <div>row 2</div>
+                  <div class="dim">…</div>
+                  <div>row 1000</div>
+                </div>
+              </div>
+              <div class="arrow" aria-hidden="true">⇒</div>
+              <div>
+                <div class="tname">Shard ST1</div>
+                <div class="tbl">
+                  <div class="h">id · name · …</div>
+                  <div>row 1</div>
+                  <div class="dim">…</div>
+                  <div>row 500</div>
+                </div>
+              </div>
+              <div>
+                <div class="tname">Shard ST2</div>
+                <div class="tbl">
+                  <div class="h">id · name · …</div>
+                  <div>row 501</div>
+                  <div class="dim">…</div>
+                  <div>row 1000</div>
+                </div>
+              </div>
+            </div>
+            <figcaption>
+              The lecture's second example splits by name: names A–P go to ST1,
+              Q–Z to ST2. The rule that decides a row's shard is the sharding
+              logic.
+            </figcaption>
+          </figure>
+          <p>
+            You write a <b>sharding logic</b> (based on a sharding key) that
+            decides which shard a row belongs to, and the app routes each query
+            to that shard. Common strategies:
+          </p>
+          <ul>
+            <li>
+              <b>Range-based:</b> A–P and Q–Z, or IDs 1–500 and 501–1000. Easy
+              to understand, but ranges fill up unevenly.
+            </li>
+            <li>
+              <b>Hash-based:</b> <code>shard = hash(user_id) % N</code>. Spreads
+              data evenly, but changing N moves almost every row.
+            </li>
+            <li>
+              <b>Directory-based:</b> a lookup table maps each key to its shard.
+              Flexible, but the lookup table is one more thing that can fail.
+            </li>
+          </ul>
+
+          <p>
+            <b>Vertical sharding (column-wise).</b> Split a table by columns. A
+            table with columns C1–C10 becomes one table with C1–C5 and another
+            with C6–C10, each keeping all the rows.
+          </p>
+          <figure>
+            <div class="shard">
+              <div>
+                <div class="tname">Table · 10 columns</div>
+                <div class="tbl">
+                  <div class="h">C1 C2 … C10</div>
+                  <div>all rows</div>
+                </div>
+              </div>
+              <div class="arrow" aria-hidden="true">⇒</div>
+              <div>
+                <div class="tname">Part A</div>
+                <div class="tbl">
+                  <div class="h">C1 … C5</div>
+                  <div>all rows</div>
+                </div>
+              </div>
+              <div>
+                <div class="tname">Part B</div>
+                <div class="tbl">
+                  <div class="h">C6 … C10</div>
+                  <div>all rows</div>
+                </div>
+              </div>
+            </div>
+            <figcaption>
+              Useful when some columns are huge or rarely read, for example
+              moving a big "bio" or blob column away from hot login data.
+            </figcaption>
+          </figure>
+          <p>
+            Generally <b>horizontal sharding is preferred</b>, but it depends on
+            the requirement. Sometimes a vertical split is all you need.
+          </p>
+
+          <h3>Drawbacks of sharding</h3>
+          <ul>
+            <li>
+              <b>Uneven data and resharding.</b> Suppose most users' names start
+              with A–P. Shard ST1 fills up fast while ST2 sits half empty. Now
+              ST1 has to be split again into ST1(1) and ST1(2), and those may
+              split again. The shards grow into a tree, and data has to be moved
+              each time.
+            </li>
+            <li>
+              <b>Joins become hard.</b> If ST1 and ST2 live on different
+              machines, a SQL <code>JOIN</code> across them is slow or
+              impossible. You end up fetching from both shards and joining in
+              application code, or <b>denormalising</b> (duplicating data) so a
+              query only needs one shard.
+            </li>
+            <li>
+              <b>Hotspots, also called the celebrity problem.</b> One key gets
+              huge traffic, for example a celebrity's profile. The shard holding
+              it melts while the others sit idle. (Web addition.)
+            </li>
+          </ul>
+          <figure>
+            <div class="dg" data-d="d11"></div>
+            <figcaption>
+              Resharding as the lecture drew it: an overloaded shard keeps
+              splitting. This mess is what consistent hashing solves.
+            </figcaption>
+          </figure>
+          <p>
+            The fix for the resharding problem is <b>consistent hashing</b>.
+            When a shard is added or removed, only a small part of the data
+            moves instead of almost all of it. It's a big topic, covered in the
+            next lecture (HLD 6).
+          </p>
+
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                <b>Choosing the sharding key</b> is the most important decision.
+                Pick a key that spreads data <em>and</em> traffic evenly, and
+                that most queries include (for example <code>user_id</code>).
+              </li>
+              <li>
+                <b>Celebrity fixes:</b> give hot keys their own dedicated shard,
+                or split one hot key into sub-keys (<code
+                  >celebId_0 … celebId_9</code
+                >) spread across shards.
+              </li>
+              <li>
+                Sharding and replication are used <b>together</b>: each shard is
+                itself a master with its own slaves.
+              </li>
+              <li>
+                Transactions that span shards need distributed-transaction
+                techniques such as 2PC or SAGA (HLD lectures 20–21).
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ───────────── FINAL ───────────── -->
+        <section class="step" id="final">
+          <div class="snum">All nine steps together</div>
+          <h2>The full picture</h2>
+          <p class="lede">
+            This is the architecture you end up with: CDN at the edge, geo load
+            balancer, data centres with app servers, cache, queue and workers,
+            replicated (and eventually sharded) databases.
+          </p>
+          <figure>
+            <div class="dg" data-d="d12"></div>
+            <figcaption>
+              Follow one request: static files come from the CDN. Dynamic calls
+              go to the load balancer, then the nearest data centre. There the
+              app checks the cache, writes to the master, reads from slaves, and
+              hands slow jobs to the queue.
+            </figcaption>
+          </figure>
+
+          <h3>Step-by-step recap</h3>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Step</th>
+                  <th>Problem it solves</th>
+                  <th>What you add</th>
+                  <th>New problem it leaves</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1 Single server</td>
+                  <td>Getting started</td>
+                  <td>One box for app + DB</td>
+                  <td>Single point of failure, shared resources</td>
+                </tr>
+                <tr>
+                  <td>2 Split app / DB</td>
+                  <td>App and DB fighting for resources</td>
+                  <td>Mid tier + data tier</td>
+                  <td>Only one app server</td>
+                </tr>
+                <tr>
+                  <td>3 LB + app servers</td>
+                  <td>App capacity, app failure</td>
+                  <td>Load balancer, N app servers, private IPs</td>
+                  <td>One database</td>
+                </tr>
+                <tr>
+                  <td>4 Replication</td>
+                  <td>DB failure, read load</td>
+                  <td>Master (writes) + slaves (reads)</td>
+                  <td>DB reads still slow</td>
+                </tr>
+                <tr>
+                  <td>5 Cache</td>
+                  <td>Expensive DB calls</td>
+                  <td>Redis with TTL, cache-aside</td>
+                  <td>Far-away users still slow</td>
+                </tr>
+                <tr>
+                  <td>6 CDN</td>
+                  <td>Latency for static files, DDoS</td>
+                  <td>Edge nodes caching HTML / CSS / JS / video</td>
+                  <td>One region for dynamic traffic</td>
+                </tr>
+                <tr>
+                  <td>7 Data centres</td>
+                  <td>Regional outage, global latency</td>
+                  <td>Geo-routing, cross-region DB replication</td>
+                  <td>Slow work blocks requests</td>
+                </tr>
+                <tr>
+                  <td>8 Message queue</td>
+                  <td>Heavy tasks blocking threads</td>
+                  <td>Producer → queue → consumer, retries</td>
+                  <td>DB too big for one master</td>
+                </tr>
+                <tr>
+                  <td>9 DB scaling</td>
+                  <td>Data and write volume</td>
+                  <td>Vertical scale, then sharding</td>
+                  <td>Resharding, joins, hotspots → consistent hashing</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="beyond">
+            <span class="tag"
+              >Also worth knowing for interviews (not covered in the
+              video)</span
+            >
+            <ul>
+              <li>
+                <b>Logging, metrics and automation:</b> at scale, you need
+                centralised logs, dashboards (CPU, latency, error rate, DAU) and
+                CI/CD. Without them you can't see problems before users do.
+              </li>
+              <li>
+                <b>Say the "why" at every step.</b> Interviewers care less about
+                the boxes than about which bottleneck each box removes.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ───────────── REVISION ───────────── -->
+        <section class="step" id="revise">
+          <div class="snum">Check yourself</div>
+          <h2>Revision questions</h2>
+          <p class="lede">Try answering out loud before opening each one.</p>
+          <details>
+            <summary>
+              Why do app servers get private IPs behind the load balancer?
+            </summary>
+            <p>
+              So the internet can't call them directly. Only the load balancer
+              is public. That's an extra security layer, and it guarantees that
+              every request goes through the load balancer's traffic
+              distribution and health checks.
+            </p>
+          </details>
+          <details>
+            <summary>
+              In master–slave replication, what happens when the master fails?
+            </summary>
+            <p>
+              A slave is promoted to master and starts accepting writes, and a
+              new slave is added to replace it. With async replication, the most
+              recent writes may need recovering because the slave might have
+              lagged behind.
+            </p>
+          </details>
+          <details>
+            <summary>Walk through a cache miss.</summary>
+            <p>
+              The app checks the cache and doesn't find the data. It reads from
+              the DB, writes the result into the cache with a TTL, and returns
+              it to the client. The next request for the same data is a cache
+              hit.
+            </p>
+          </details>
+          <details>
+            <summary>
+              "A CDN does caching, but not everything that caches is a CDN."
+              Explain.
+            </summary>
+            <p>
+              Redis caches data inside your data centre. A CDN is a
+              geographically distributed network that caches static content near
+              users. It also adds DDoS protection, bot filtering and lower
+              origin load. Caching is one feature of a CDN, not the whole
+              definition.
+            </p>
+          </details>
+          <details>
+            <summary>Where does the CDN sit in the request path?</summary>
+            <p>
+              Before the load balancer. The client fetches static files from the
+              nearest CDN node. On a miss, the node asks a neighbouring node,
+              then the origin. Only dynamic requests go to the load balancer.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Why use a message queue for sending emails after an order?
+            </summary>
+            <p>
+              Sending email is slow. Doing it inside the request thread blocks
+              the thread and delays the user. With a queue, the app publishes a
+              message and responds right away. A consumer sends the email
+              asynchronously, and on failure the message is requeued and
+              retried.
+            </p>
+          </details>
+          <details>
+            <summary>Direct vs fanout vs topic exchange?</summary>
+            <p>
+              Direct: exact match of routing key and binding key. Fanout: copy
+              to every bound queue, key ignored. Topic: wildcard pattern match
+              on dot-separated keys (<code>*</code> = one word, <code>#</code> =
+              zero or more words).
+            </p>
+          </details>
+          <details>
+            <summary>
+              Horizontal vs vertical sharding, and which is usually preferred?
+            </summary>
+            <p>
+              Horizontal splits rows across shards (same columns, different
+              rows). Vertical splits columns (all rows, different columns).
+              Horizontal is generally preferred for scaling, but the right
+              choice depends on the requirement.
+            </p>
+          </details>
+          <details>
+            <summary>Name three drawbacks of sharding.</summary>
+            <p>
+              Uneven distribution that forces resharding, cross-shard joins
+              becoming hard (so you denormalise), and hotspot or celebrity keys.
+              Consistent hashing reduces how much data moves when shards change.
+            </p>
+          </details>
+
+          <h3>Sources used to expand these notes</h3>
+          <ul class="sources">
+            <li>
+              <a
+                href="https://bytebytego.com/courses/system-design-interview/scale-from-zero-to-millions-of-users"
+                target="_blank"
+                rel="noopener"
+                >ByteByteGo: Scale From Zero To Millions Of Users</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://cleverengineer.substack.com/p/scaling-from-a-stateful-web-tier"
+                target="_blank"
+                rel="noopener"
+                >Scaling from a stateful web tier to a stateless architecture</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://www.rabbitmq.com/docs/exchanges"
+                target="_blank"
+                rel="noopener"
+                >RabbitMQ docs: Exchanges</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://www.cloudamqp.com/blog/part4-rabbitmq-for-beginners-exchanges-routing-keys-bindings.html"
+                target="_blank"
+                rel="noopener"
+                >CloudAMQP: Exchanges, routing keys and bindings</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://gcore.com/learning/what-is-cdn-caching"
+                target="_blank"
+                rel="noopener"
+                >Gcore: CDN caching explained</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://www.ioriver.io/questions/how-does-a-cdn-protect-websites-from-ddos-attacks"
+                target="_blank"
+                rel="noopener"
+                >IO River: How a CDN stops DDoS attacks</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://www.hellointerview.com/learn/system-design/core-concepts/sharding"
+                target="_blank"
+                rel="noopener"
+                >Hello Interview: Sharding</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://designgurus.substack.com/p/system-design-basics-handling-hot"
+                target="_blank"
+                rel="noopener"
+                >Design Gurus: Hot partitions and the celebrity problem</a
+              >
+            </li>
+          </ul>
+          <p class="foot">
+            Built from the lecture's audio transcript and whiteboard frames (35
+            min). Sections marked "Beyond the lecture" come from the sources
+            above, not from the video.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        var D = {
+          d1: {
+            h: 250,
+            n: [
+              {
+                t: "client",
+                x: 240,
+                y: 14,
+                w: 160,
+                h: 48,
+                l: "Client",
+                s: "web · mobile",
+              },
+              { t: "zone", x: 170, y: 122, w: 300, h: 116, l: "ONE MACHINE" },
+              {
+                t: "app",
+                x: 190,
+                y: 162,
+                w: 120,
+                h: 56,
+                l: "App code",
+                s: "business logic",
+              },
+              {
+                t: "db",
+                x: 330,
+                y: 156,
+                w: 120,
+                h: 66,
+                l: "Database",
+                s: "same machine",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [300, 62],
+                  [300, 122],
+                ],
+                l: "request",
+                at: [292, 96],
+                a: "end",
+              },
+              {
+                p: [
+                  [340, 122],
+                  [340, 62],
+                ],
+                l: "response",
+                at: [348, 96],
+                a: "start",
+              },
+              {
+                p: [
+                  [310, 190],
+                  [330, 190],
+                ],
+                both: 1,
+              },
+            ],
+          },
+          d2: {
+            h: 330,
+            n: [
+              {
+                t: "client",
+                x: 240,
+                y: 14,
+                w: 160,
+                h: 48,
+                l: "Client",
+                s: "web · mobile",
+              },
+              {
+                t: "app",
+                x: 210,
+                y: 126,
+                w: 220,
+                h: 58,
+                l: "Application server",
+                s: "mid tier · business logic",
+              },
+              {
+                t: "db",
+                x: 230,
+                y: 244,
+                w: 180,
+                h: 70,
+                l: "DB server",
+                s: "data tier · storage",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [320, 62],
+                  [320, 126],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [320, 184],
+                  [320, 244],
+                ],
+                both: 1,
+              },
+            ],
+          },
+          d3: {
+            h: 380,
+            n: [
+              {
+                t: "client",
+                x: 240,
+                y: 10,
+                w: 160,
+                h: 46,
+                l: "Client",
+                s: "web · mobile",
+              },
+              {
+                t: "lb",
+                x: 120,
+                y: 96,
+                w: 400,
+                h: 46,
+                l: "Load balancer",
+                s: "the only public IP",
+              },
+              {
+                t: "zone",
+                x: 60,
+                y: 174,
+                w: 520,
+                h: 98,
+                l: "PRIVATE NETWORK · PRIVATE IPs",
+              },
+              { t: "app", x: 80, y: 204, w: 140, h: 52, l: "App server 1" },
+              { t: "app", x: 250, y: 204, w: 140, h: 52, l: "App server 2" },
+              { t: "app", x: 420, y: 204, w: 140, h: 52, l: "App server N" },
+              { t: "db", x: 240, y: 304, w: 160, h: 62, l: "Database" },
+            ],
+            e: [
+              {
+                p: [
+                  [320, 56],
+                  [320, 96],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [320, 142],
+                  [150, 204],
+                ],
+              },
+              {
+                p: [
+                  [320, 142],
+                  [320, 204],
+                ],
+              },
+              {
+                p: [
+                  [320, 142],
+                  [490, 204],
+                ],
+              },
+              {
+                p: [
+                  [150, 256],
+                  [290, 304],
+                ],
+              },
+              {
+                p: [
+                  [320, 256],
+                  [320, 304],
+                ],
+              },
+              {
+                p: [
+                  [490, 256],
+                  [350, 304],
+                ],
+              },
+            ],
+          },
+          d4: {
+            h: 410,
+            n: [
+              { t: "lb", x: 120, y: 14, w: 400, h: 40, l: "Load balancer" },
+              { t: "app", x: 80, y: 86, w: 140, h: 48, l: "App server 1" },
+              { t: "app", x: 250, y: 86, w: 140, h: 48, l: "App server 2" },
+              { t: "app", x: 420, y: 86, w: 140, h: 48, l: "App server N" },
+              { t: "zone", x: 40, y: 236, w: 570, h: 124, l: "DB CLUSTER" },
+              {
+                t: "db",
+                x: 60,
+                y: 264,
+                w: 170,
+                h: 66,
+                l: "Master DB",
+                s: "all writes",
+              },
+              {
+                t: "db",
+                x: 300,
+                y: 264,
+                w: 130,
+                h: 66,
+                l: "Slave 1",
+                s: "reads",
+              },
+              {
+                t: "db",
+                x: 460,
+                y: 264,
+                w: 130,
+                h: 66,
+                l: "Slave 2",
+                s: "reads",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [320, 54],
+                  [150, 86],
+                ],
+              },
+              {
+                p: [
+                  [320, 54],
+                  [320, 86],
+                ],
+              },
+              {
+                p: [
+                  [320, 54],
+                  [490, 86],
+                ],
+              },
+              {
+                p: [
+                  [320, 134],
+                  [145, 264],
+                ],
+                l: "writes",
+                at: [222, 196],
+                a: "end",
+              },
+              {
+                p: [
+                  [320, 134],
+                  [365, 264],
+                ],
+                l: "reads",
+                at: [352, 196],
+                a: "start",
+              },
+              {
+                p: [
+                  [320, 134],
+                  [525, 264],
+                ],
+              },
+              {
+                p: [
+                  [230, 297],
+                  [300, 297],
+                ],
+                dash: 1,
+                l: "copy",
+                at: [265, 288],
+                a: "middle",
+              },
+              {
+                p: [
+                  [145, 330],
+                  [145, 384],
+                  [525, 384],
+                  [525, 330],
+                ],
+                dash: 1,
+                l: "replicate",
+                at: [335, 388],
+                a: "middle",
+              },
+            ],
+          },
+          d5: {
+            h: 300,
+            n: [
+              { t: "app", x: 60, y: 40, w: 200, h: 58, l: "App servers" },
+              {
+                t: "cache",
+                x: 400,
+                y: 40,
+                w: 180,
+                h: 58,
+                l: "Cache",
+                s: "Redis · TTL e.g. 24h",
+              },
+              {
+                t: "db",
+                x: 80,
+                y: 210,
+                w: 160,
+                h: 72,
+                l: "Database",
+                s: "slow · expensive",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [260, 58],
+                  [400, 58],
+                ],
+                l: "① check here first",
+                at: [330, 50],
+                a: "middle",
+              },
+              {
+                p: [
+                  [400, 82],
+                  [260, 82],
+                ],
+                l: "② hit → return",
+                at: [330, 100],
+                a: "middle",
+              },
+              {
+                p: [
+                  [160, 98],
+                  [160, 210],
+                ],
+                both: 1,
+                l: "③ miss → read DB",
+                at: [170, 160],
+                a: "start",
+              },
+              {
+                p: [
+                  [230, 98],
+                  [230, 138],
+                  [490, 138],
+                  [490, 98],
+                ],
+                dash: 1,
+                l: "④ save result in cache (with TTL)",
+                at: [360, 156],
+                a: "middle",
+              },
+            ],
+          },
+          d6: {
+            h: 370,
+            n: [
+              { t: "client", x: 30, y: 16, w: 130, h: 40, l: "User · USA" },
+              {
+                t: "cdn",
+                x: 30,
+                y: 92,
+                w: 130,
+                h: 50,
+                l: "CDN · USA",
+                s: "edge node",
+              },
+              {
+                t: "cdn",
+                x: 30,
+                y: 228,
+                w: 130,
+                h: 50,
+                l: "CDN · France",
+                s: "edge node",
+              },
+              { t: "client", x: 30, y: 314, w: 130, h: 40, l: "User · France" },
+              { t: "client", x: 480, y: 16, w: 130, h: 40, l: "User · Japan" },
+              {
+                t: "cdn",
+                x: 480,
+                y: 92,
+                w: 130,
+                h: 50,
+                l: "CDN · Japan",
+                s: "edge node",
+              },
+              {
+                t: "cdn",
+                x: 480,
+                y: 228,
+                w: 130,
+                h: 50,
+                l: "CDN · India",
+                s: "edge node",
+              },
+              { t: "client", x: 480, y: 314, w: 130, h: 40, l: "User · India" },
+              {
+                t: "db",
+                x: 245,
+                y: 150,
+                w: 150,
+                h: 78,
+                l: "Origin server",
+                s: "India data centre",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [95, 56],
+                  [95, 92],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [95, 278],
+                  [95, 314],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [545, 56],
+                  [545, 92],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [545, 278],
+                  [545, 314],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [160, 117],
+                  [245, 168],
+                ],
+                dash: 1,
+              },
+              {
+                p: [
+                  [480, 117],
+                  [395, 168],
+                ],
+                dash: 1,
+              },
+              {
+                p: [
+                  [160, 253],
+                  [245, 212],
+                ],
+                dash: 1,
+              },
+              {
+                p: [
+                  [480, 253],
+                  [395, 212],
+                ],
+                dash: 1,
+              },
+              {
+                p: [
+                  [95, 142],
+                  [95, 228],
+                ],
+                both: 1,
+                dash: 1,
+                l: "ask a neighbour",
+                at: [104, 190],
+                a: "start",
+              },
+            ],
+            notes: [{ x: 320, y: 138, l: "only on a miss", a: "middle" }],
+          },
+          d7: {
+            h: 410,
+            n: [
+              { t: "client", x: 245, y: 10, w: 150, h: 44, l: "Client" },
+              {
+                t: "cdn",
+                x: 440,
+                y: 10,
+                w: 150,
+                h: 44,
+                l: "CDN",
+                s: "static files",
+              },
+              {
+                t: "lb",
+                x: 220,
+                y: 90,
+                w: 200,
+                h: 44,
+                l: "Load balancer",
+                s: "geo-routing",
+              },
+              {
+                t: "zone",
+                x: 20,
+                y: 180,
+                w: 290,
+                h: 215,
+                l: "INDIA DATA CENTRE",
+              },
+              { t: "app", x: 35, y: 208, w: 160, h: 44, l: "App servers" },
+              { t: "cache", x: 215, y: 208, w: 80, h: 44, l: "Cache" },
+              { t: "db", x: 40, y: 296, w: 100, h: 60, l: "Master" },
+              { t: "db", x: 170, y: 296, w: 100, h: 60, l: "Slave" },
+              {
+                t: "zone",
+                x: 330,
+                y: 180,
+                w: 290,
+                h: 215,
+                l: "US DATA CENTRE",
+              },
+              { t: "cache", x: 345, y: 208, w: 80, h: 44, l: "Cache" },
+              { t: "app", x: 445, y: 208, w: 160, h: 44, l: "App servers" },
+              { t: "db", x: 350, y: 296, w: 100, h: 60, l: "Slave" },
+              { t: "db", x: 480, y: 296, w: 100, h: 60, l: "Master" },
+            ],
+            e: [
+              {
+                p: [
+                  [395, 32],
+                  [440, 32],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [320, 54],
+                  [320, 90],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [280, 134],
+                  [165, 180],
+                ],
+                l: "nearest DC",
+                at: [214, 152],
+                a: "end",
+              },
+              {
+                p: [
+                  [360, 134],
+                  [475, 180],
+                ],
+              },
+              {
+                p: [
+                  [195, 230],
+                  [215, 230],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [90, 252],
+                  [90, 296],
+                ],
+                l: "write",
+                at: [96, 278],
+                a: "start",
+              },
+              {
+                p: [
+                  [170, 252],
+                  [220, 296],
+                ],
+                l: "read",
+                at: [202, 270],
+                a: "start",
+              },
+              {
+                p: [
+                  [140, 326],
+                  [170, 326],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [425, 230],
+                  [445, 230],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [530, 252],
+                  [530, 296],
+                ],
+                l: "write",
+                at: [536, 278],
+                a: "start",
+              },
+              {
+                p: [
+                  [470, 252],
+                  [400, 296],
+                ],
+                l: "read",
+                at: [428, 270],
+                a: "end",
+              },
+              {
+                p: [
+                  [450, 326],
+                  [480, 326],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [90, 356],
+                  [90, 378],
+                  [530, 378],
+                  [530, 356],
+                ],
+                both: 1,
+                dash: 1,
+                l: "cross-region replication",
+                at: [310, 382],
+                a: "middle",
+              },
+            ],
+          },
+          d8: {
+            h: 200,
+            n: [
+              {
+                t: "app",
+                x: 20,
+                y: 64,
+                w: 140,
+                h: 56,
+                l: "Producer",
+                s: "e.g. order service",
+              },
+              {
+                t: "mq",
+                x: 230,
+                y: 54,
+                w: 190,
+                h: 76,
+                l: "Message queue",
+                slots: 1,
+              },
+              {
+                t: "app",
+                x: 490,
+                y: 64,
+                w: 130,
+                h: 56,
+                l: "Consumer",
+                s: "e.g. email worker",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [160, 92],
+                  [230, 92],
+                ],
+                l: "publish",
+                at: [195, 84],
+                a: "middle",
+              },
+              {
+                p: [
+                  [420, 92],
+                  [490, 92],
+                ],
+                l: "consume",
+                at: [455, 84],
+                a: "middle",
+              },
+              {
+                p: [
+                  [555, 120],
+                  [555, 168],
+                  [325, 168],
+                  [325, 130],
+                ],
+                dash: 1,
+                l: "failed? requeue & retry",
+                at: [440, 184],
+                a: "middle",
+              },
+            ],
+          },
+          d9: {
+            h: 300,
+            n: [
+              { t: "app", x: 10, y: 122, w: 100, h: 52, l: "Producer" },
+              {
+                t: "zone",
+                x: 150,
+                y: 24,
+                w: 330,
+                h: 262,
+                l: "RABBITMQ BROKER",
+              },
+              { t: "mq", x: 190, y: 122, w: 100, h: 52, l: "Exchange" },
+              { t: "mq", x: 345, y: 56, w: 110, h: 40, l: "Queue Q1" },
+              { t: "mq", x: 345, y: 128, w: 110, h: 40, l: "Queue Q2" },
+              { t: "mq", x: 345, y: 200, w: 110, h: 40, l: "Queue Q3" },
+              { t: "app", x: 510, y: 56, w: 120, h: 40, l: "Subscriber 1" },
+              { t: "app", x: 510, y: 128, w: 120, h: 40, l: "Subscriber 2" },
+              { t: "app", x: 510, y: 200, w: 120, h: 40, l: "Subscriber 3" },
+            ],
+            e: [
+              {
+                p: [
+                  [110, 148],
+                  [190, 148],
+                ],
+                l: "routing key",
+                at: [150, 140],
+                a: "middle",
+              },
+              {
+                p: [
+                  [290, 148],
+                  [345, 76],
+                ],
+                l: "binding",
+                at: [314, 100],
+                a: "end",
+              },
+              {
+                p: [
+                  [290, 148],
+                  [345, 148],
+                ],
+              },
+              {
+                p: [
+                  [290, 148],
+                  [345, 220],
+                ],
+              },
+              {
+                p: [
+                  [455, 76],
+                  [510, 76],
+                ],
+              },
+              {
+                p: [
+                  [455, 148],
+                  [510, 148],
+                ],
+              },
+              {
+                p: [
+                  [455, 220],
+                  [510, 220],
+                ],
+              },
+            ],
+          },
+          d10: {
+            h: 220,
+            n: [
+              {
+                t: "db",
+                x: 62,
+                y: 20,
+                w: 130,
+                h: 78,
+                l: "DB",
+                s: "more CPU · RAM",
+              },
+              { t: "db", x: 87, y: 134, w: 80, h: 50, l: "DB" },
+              { t: "db", x: 290, y: 84, w: 70, h: 60, l: "DB 1" },
+              { t: "db", x: 375, y: 84, w: 70, h: 60, l: "DB 2" },
+              { t: "db", x: 460, y: 84, w: 70, h: 60, l: "DB 3" },
+              { t: "db", x: 545, y: 84, w: 70, h: 60, l: "DB 4" },
+            ],
+            e: [
+              {
+                p: [
+                  [127, 134],
+                  [127, 98],
+                ],
+              },
+              {
+                p: [
+                  [290, 52],
+                  [615, 52],
+                ],
+                l: "add more machines",
+                at: [452, 44],
+                a: "middle",
+              },
+            ],
+            notes: [
+              { x: 40, y: 208, l: "VERTICAL · scale up" },
+              { x: 290, y: 208, l: "HORIZONTAL · scale out" },
+            ],
+          },
+          d11: {
+            h: 220,
+            n: [
+              {
+                t: "db",
+                x: 180,
+                y: 16,
+                w: 150,
+                h: 62,
+                l: "Shard ST1",
+                s: "A–P · full!",
+              },
+              {
+                t: "db",
+                x: 420,
+                y: 16,
+                w: 150,
+                h: 62,
+                l: "Shard ST2",
+                s: "Q–Z · half empty",
+              },
+              { t: "db", x: 60, y: 140, w: 140, h: 62, l: "ST1 (1)", s: "A–H" },
+              {
+                t: "db",
+                x: 300,
+                y: 140,
+                w: 140,
+                h: 62,
+                l: "ST1 (2)",
+                s: "I–P",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [230, 78],
+                  [130, 140],
+                ],
+              },
+              {
+                p: [
+                  [280, 78],
+                  [370, 140],
+                ],
+              },
+            ],
+            notes: [
+              { x: 470, y: 170, l: "…and they may", a: "start" },
+              { x: 470, y: 186, l: "split again", a: "start" },
+            ],
+          },
+          d12: {
+            h: 490,
+            n: [
+              { t: "client", x: 245, y: 10, w: 150, h: 44, l: "Client" },
+              {
+                t: "cdn",
+                x: 440,
+                y: 10,
+                w: 150,
+                h: 44,
+                l: "CDN",
+                s: "HTML · CSS · video",
+              },
+              {
+                t: "lb",
+                x: 220,
+                y: 90,
+                w: 200,
+                h: 44,
+                l: "Load balancer",
+                s: "geo-routing",
+              },
+              {
+                t: "zone",
+                x: 20,
+                y: 180,
+                w: 290,
+                h: 290,
+                l: "INDIA DATA CENTRE",
+              },
+              { t: "app", x: 35, y: 208, w: 160, h: 44, l: "App servers" },
+              { t: "cache", x: 215, y: 208, w: 80, h: 44, l: "Cache" },
+              {
+                t: "db",
+                x: 40,
+                y: 296,
+                w: 100,
+                h: 60,
+                l: "Master",
+                s: "shard-able",
+              },
+              { t: "db", x: 170, y: 296, w: 100, h: 60, l: "Slave" },
+              { t: "mq", x: 40, y: 400, w: 110, h: 44, l: "Queue" },
+              {
+                t: "app",
+                x: 170,
+                y: 400,
+                w: 120,
+                h: 44,
+                l: "Workers",
+                s: "email · notify",
+              },
+              {
+                t: "zone",
+                x: 330,
+                y: 180,
+                w: 290,
+                h: 290,
+                l: "US DATA CENTRE",
+              },
+              { t: "cache", x: 345, y: 208, w: 80, h: 44, l: "Cache" },
+              { t: "app", x: 445, y: 208, w: 160, h: 44, l: "App servers" },
+              { t: "db", x: 350, y: 296, w: 100, h: 60, l: "Slave" },
+              {
+                t: "db",
+                x: 480,
+                y: 296,
+                w: 100,
+                h: 60,
+                l: "Master",
+                s: "shard-able",
+              },
+              {
+                t: "app",
+                x: 350,
+                y: 400,
+                w: 120,
+                h: 44,
+                l: "Workers",
+                s: "email · notify",
+              },
+              { t: "mq", x: 490, y: 400, w: 110, h: 44, l: "Queue" },
+            ],
+            e: [
+              {
+                p: [
+                  [395, 32],
+                  [440, 32],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [320, 54],
+                  [320, 90],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [280, 134],
+                  [165, 180],
+                ],
+              },
+              {
+                p: [
+                  [360, 134],
+                  [475, 180],
+                ],
+              },
+              {
+                p: [
+                  [195, 230],
+                  [215, 230],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [90, 252],
+                  [90, 296],
+                ],
+              },
+              {
+                p: [
+                  [170, 252],
+                  [220, 296],
+                ],
+              },
+              {
+                p: [
+                  [140, 326],
+                  [170, 326],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [35, 230],
+                  [28, 230],
+                  [28, 422],
+                  [40, 422],
+                ],
+              },
+              {
+                p: [
+                  [150, 422],
+                  [170, 422],
+                ],
+              },
+              {
+                p: [
+                  [425, 230],
+                  [445, 230],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [530, 252],
+                  [530, 296],
+                ],
+              },
+              {
+                p: [
+                  [470, 252],
+                  [400, 296],
+                ],
+              },
+              {
+                p: [
+                  [450, 326],
+                  [480, 326],
+                ],
+                both: 1,
+              },
+              {
+                p: [
+                  [605, 230],
+                  [612, 230],
+                  [612, 422],
+                  [600, 422],
+                ],
+              },
+              {
+                p: [
+                  [490, 422],
+                  [470, 422],
+                ],
+              },
+              {
+                p: [
+                  [90, 356],
+                  [90, 378],
+                  [530, 378],
+                  [530, 356],
+                ],
+                both: 1,
+                dash: 1,
+                l: "cross-region replication",
+                at: [310, 382],
+                a: "middle",
+              },
+            ],
+          },
+        };
+
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        }
+        function node(n) {
+          var o = "",
+            cx = n.x + n.w / 2;
+          if (n.t === "zone") {
+            return (
+              '<rect class="zone" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="12"/>' +
+              '<text class="zl" x="' +
+              (n.x + 12) +
+              '" y="' +
+              (n.y + 17) +
+              '">' +
+              esc(n.l) +
+              "</text>"
+            );
+          }
+          var ty = n.y + n.h / 2;
+          if (n.t === "db") {
+            var e = 8,
+              x = n.x,
+              y = n.y,
+              w = n.w,
+              h = n.h;
+            o +=
+              '<path class="n t-db" d="M' +
+              x +
+              "," +
+              (y + e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              (x + w) +
+              "," +
+              (y + e) +
+              " V" +
+              (y + h - e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              x +
+              "," +
+              (y + h - e) +
+              ' Z"/>';
+            o +=
+              '<ellipse class="n t-db" cx="' +
+              cx +
+              '" cy="' +
+              (y + e) +
+              '" rx="' +
+              w / 2 +
+              '" ry="' +
+              e +
+              '"/>';
+            ty += e / 2;
+          } else {
+            o +=
+              '<rect class="n t-' +
+              n.t +
+              '" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="9"/>';
+          }
+          if (n.slots) {
+            var pad = 16,
+              cw = (n.w - pad * 2 - 4 * 6) / 5,
+              cy = n.y + n.h - 30;
+            for (var i = 0; i < 5; i++)
+              o +=
+                '<rect class="slot" x="' +
+                (n.x + pad + i * (cw + 6)) +
+                '" y="' +
+                cy +
+                '" width="' +
+                cw +
+                '" height="16" rx="3"/>';
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (n.y + 24) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            return o;
+          }
+          if (n.s) {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty - 3) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            o +=
+              '<text class="ns" x="' +
+              cx +
+              '" y="' +
+              (ty + 12) +
+              '" text-anchor="middle">' +
+              esc(n.s) +
+              "</text>";
+          } else {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty + 5) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+          }
+          return o;
+        }
+        function svg(key, d) {
+          var mid = "ah-" + key,
+            o =
+              '<svg viewBox="0 0 640 ' +
+              d.h +
+              '" role="img" aria-label="Architecture diagram">';
+          o +=
+            '<defs><marker id="' +
+            mid +
+            '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker></defs>';
+          (d.e || []).forEach(function (e) {
+            var pts = e.p
+              .map(function (p) {
+                return p.join(",");
+              })
+              .join(" ");
+            o +=
+              '<polyline class="ed' +
+              (e.dash ? " dash" : "") +
+              '" points="' +
+              pts +
+              '" marker-end="url(#' +
+              mid +
+              ')"' +
+              (e.both ? ' marker-start="url(#' + mid + ')"' : "") +
+              "/>";
+          });
+          d.n.forEach(function (n) {
+            o += node(n);
+          });
+          (d.e || []).forEach(function (e) {
+            if (e.l)
+              o +=
+                '<text class="el" x="' +
+                e.at[0] +
+                '" y="' +
+                e.at[1] +
+                '" text-anchor="' +
+                (e.a || "middle") +
+                '">' +
+                esc(e.l) +
+                "</text>";
+          });
+          (d.notes || []).forEach(function (t) {
+            o +=
+              '<text class="nt" x="' +
+              t.x +
+              '" y="' +
+              t.y +
+              '" text-anchor="' +
+              (t.a || "start") +
+              '">' +
+              esc(t.l) +
+              "</text>";
+          });
+          return o + "</svg>";
+        }
+        document.querySelectorAll(".dg[data-d]").forEach(function (el) {
+          var k = el.getAttribute("data-d");
+          if (D[k]) el.innerHTML = svg(k, D[k]);
+        });
+
+        // latency bars (lecturer's illustrative numbers)
+        var lat = [
+            ["India", 1],
+            ["Saudi Arabia", 2],
+            ["USA", 3],
+            ["Japan", 4],
+          ],
+          lh = "";
+        lat.forEach(function (r) {
+          lh +=
+            "<span>" +
+            r[0] +
+            '</span><span class="bar" style="width:' +
+            (r[1] / 4) * 100 +
+            '%"></span><span class="v">' +
+            r[1] +
+            " ms</span>";
+        });
+        document.getElementById("lat").innerHTML = lh;
+
+        // hero staircase
+        var steps = [
+          ["Single server", ""],
+          ["Split app / DB", ""],
+          ["LB + app servers", ""],
+          ["Replication", ""],
+          ["Cache", "★"],
+          ["CDN", "★★"],
+          ["Data centres", ""],
+          ["Queue", "★★"],
+          ["DB sharding", "★★"],
+        ];
+        var s = "",
+          W = 60,
+          base = 286;
+        steps.forEach(function (st, i) {
+          var x = 8 + i * W,
+            top = base - (i + 1) * 24,
+            h = base - top;
+          s +=
+            '<a href="#s' +
+            (i + 1) +
+            '" aria-label="Step ' +
+            (i + 1) +
+            ": " +
+            st[0] +
+            '">';
+          s +=
+            '<rect class="st" x="' +
+            x +
+            '" y="' +
+            top +
+            '" width="' +
+            (W - 4) +
+            '" height="' +
+            h +
+            '" rx="4"/>';
+          s +=
+            '<text class="sn" x="' +
+            (x + 8) +
+            '" y="' +
+            (top + 18) +
+            '">' +
+            (i + 1) +
+            "</text>";
+          if (st[1])
+            s +=
+              '<text class="star" x="' +
+              (x + 8) +
+              '" y="' +
+              (top + 36) +
+              '">' +
+              st[1] +
+              "</text>";
+          s +=
+            '<text class="sl" transform="translate(' +
+            (x + 10) +
+            "," +
+            (top - 8) +
+            ') rotate(-38)">' +
+            st[0] +
+            "</text>";
+          s += "</a>";
+        });
+        s +=
+          '<text class="cap" x="8" y="' +
+          (base + 12) +
+          '">0 users</text><text class="cap" x="' +
+          (8 + 9 * W - 4) +
+          '" y="' +
+          (base + 12) +
+          '" text-anchor="end">1M+ users</text>';
+        var sv = document.getElementById("stairs");
+        sv.setAttribute("viewBox", "0 0 600 302");
+        sv.innerHTML = s;
+
+        // rail highlight
+        var links = [].slice.call(document.querySelectorAll("#rail a"));
+        if ("IntersectionObserver" in window) {
+          var io = new IntersectionObserver(
+            function (ents) {
+              ents.forEach(function (en) {
+                if (en.isIntersecting) {
+                  links.forEach(function (a) {
+                    a.classList.toggle(
+                      "on",
+                      a.getAttribute("href") === "#" + en.target.id,
+                    );
+                  });
+                }
+              });
+            },
+            { rootMargin: "-30% 0px -60% 0px" },
+          );
+          document.querySelectorAll("main .step").forEach(function (sec) {
+            io.observe(sec);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

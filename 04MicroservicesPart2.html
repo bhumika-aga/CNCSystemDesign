@@ -1,0 +1,2647 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Strangler, SAGA and CQRS</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+      }
+      img {
+        max-width: 100%;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #eef1f4;
+        --surface: #ffffff;
+        --sunk: #e3e8ed;
+        --ink: #15202b;
+        --muted: #56636f;
+        --rule: #d3dae1;
+        --line: #8795a2;
+        --accent: #0e7c7b;
+        --accent-soft: #d7efee;
+        --warn: #b45a12;
+        --warn-soft: #fbe9d8;
+        --c-client-f: #e7ebef;
+        --c-client-s: #56636f;
+        --c-lb-f: #ede8ff;
+        --c-lb-s: #6546d6;
+        --c-app-f: #e3ecff;
+        --c-app-s: #2d5fc4;
+        --c-db-f: #dff3e7;
+        --c-db-s: #23845a;
+        --c-cache-f: #ffe7de;
+        --c-cache-s: #c94c25;
+        --c-cdn-f: #d9f1f1;
+        --c-cdn-s: #0e8080;
+        --c-mq-f: #fff0d3;
+        --c-mq-s: #a8701a;
+        --display:
+          "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui,
+          sans-serif;
+        --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+        --mono:
+          "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          color-scheme: dark;
+          --bg: #0f151b;
+          --surface: #172029;
+          --sunk: #1d2833;
+          --ink: #e3e9ef;
+          --muted: #98a5b1;
+          --rule: #2a3643;
+          --line: #6a7988;
+          --accent: #4cc8c4;
+          --accent-soft: #12302f;
+          --warn: #f0a060;
+          --warn-soft: #35240f;
+          --c-client-f: #202a34;
+          --c-client-s: #94a2af;
+          --c-lb-f: #241e44;
+          --c-lb-s: #a48fff;
+          --c-app-f: #162844;
+          --c-app-s: #76a0ff;
+          --c-db-f: #132e1f;
+          --c-db-s: #52c68a;
+          --c-cache-f: #371c13;
+          --c-cache-s: #ff8b64;
+          --c-cdn-f: #0f2f2f;
+          --c-cdn-s: #41c9c9;
+          --c-mq-f: #36290e;
+          --c-mq-s: #e7ab48;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0f151b;
+        --surface: #172029;
+        --sunk: #1d2833;
+        --ink: #e3e9ef;
+        --muted: #98a5b1;
+        --rule: #2a3643;
+        --line: #6a7988;
+        --accent: #4cc8c4;
+        --accent-soft: #12302f;
+        --warn: #f0a060;
+        --warn-soft: #35240f;
+        --c-client-f: #202a34;
+        --c-client-s: #94a2af;
+        --c-lb-f: #241e44;
+        --c-lb-s: #a48fff;
+        --c-app-f: #162844;
+        --c-app-s: #76a0ff;
+        --c-db-f: #132e1f;
+        --c-db-s: #52c68a;
+        --c-cache-f: #371c13;
+        --c-cache-s: #ff8b64;
+        --c-cdn-f: #0f2f2f;
+        --c-cdn-s: #41c9c9;
+        --c-mq-f: #36290e;
+        --c-mq-s: #e7ab48;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 17px;
+        line-height: 1.62;
+        padding-inline: 20px;
+        padding-block: 0 64px;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--display);
+        line-height: 1.12;
+        text-wrap: balance;
+        margin: 0;
+      }
+      h2 {
+        font-size: clamp(28px, 4.2vw, 38px);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      h3 {
+        font-size: 19px;
+        font-weight: 700;
+        margin-top: 28px;
+        margin-bottom: 6px;
+      }
+      p {
+        margin: 0 0 12px;
+      }
+      ul,
+      ol {
+        margin: 0 0 12px;
+        padding-left: 22px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      li::marker {
+        color: var(--muted);
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.84em;
+      }
+      code {
+        background: var(--sunk);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      b,
+      strong {
+        font-weight: 600;
+      }
+
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 56px;
+      }
+      @media (max-width: 960px) {
+        .wrap {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .rail {
+          display: none;
+        }
+      }
+
+      /* hero */
+      .hero {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-block: 48px 28px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 40px;
+        align-items: end;
+      }
+      @media (max-width: 860px) {
+        .hero {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 20px;
+        }
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: clamp(44px, 7.4vw, 84px);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 0.95;
+      }
+      h1 .big {
+        color: var(--accent);
+      }
+      .hero .intro {
+        font-size: 18px;
+        margin-top: 18px;
+        max-width: 34em;
+        color: var(--ink);
+      }
+      .stairs {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .stairs text {
+        font-family: var(--mono);
+      }
+      .stairs .st {
+        fill: var(--sunk);
+        stroke: var(--rule);
+      }
+      .stairs a:hover .st,
+      .stairs a:focus .st {
+        fill: var(--accent-soft);
+        stroke: var(--accent);
+      }
+      .stairs .sn {
+        font-size: 13px;
+        font-weight: 600;
+        fill: var(--ink);
+      }
+      .stairs .sl {
+        font-size: 11.5px;
+        fill: var(--muted);
+      }
+      .stairs .star {
+        font-size: 13px;
+        fill: var(--warn);
+      }
+      .stairs .cap {
+        font-size: 11px;
+        fill: var(--muted);
+      }
+
+      .legend {
+        max-width: 1120px;
+        margin: 0 auto 36px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        align-items: center;
+        border-top: 1px solid var(--rule);
+        padding-top: 16px;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid;
+        vertical-align: -2px;
+        margin-right: 6px;
+      }
+
+      /* rail */
+      .rail {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        align-self: start;
+        padding-top: 8px;
+        max-height: 100vh;
+        overflow: auto;
+      }
+      .rail ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-family: var(--display);
+        font-size: 15px;
+      }
+      .rail li {
+        margin: 0;
+      }
+      .rail a {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 6px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        color: var(--muted);
+        text-decoration: none;
+        line-height: 1.3;
+      }
+      .rail a span {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding-top: 2px;
+      }
+      .rail a:hover {
+        background: var(--sunk);
+        color: var(--ink);
+      }
+      .rail a.on {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      .rail .head {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px 8px;
+      }
+
+      main {
+        min-width: 0;
+      }
+      .step {
+        padding-block: 40px;
+        border-top: 1px solid var(--rule);
+      }
+      .step:first-child {
+        border-top: 0;
+        padding-top: 4px;
+      }
+      .step > * {
+        max-width: 720px;
+      }
+      .step > figure {
+        max-width: 760px;
+      }
+      .snum {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .flag {
+        color: var(--warn);
+        background: var(--warn-soft);
+        padding: 2px 8px;
+        border-radius: 99px;
+        letter-spacing: 0.02em;
+        text-transform: none;
+      }
+      .lede {
+        font-size: 19px;
+        margin-top: 12px;
+        color: var(--ink);
+      }
+
+      .eli5 {
+        background: var(--accent-soft);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 22px 0;
+      }
+      .eli5 p:last-child {
+        margin-bottom: 0;
+      }
+      .tag {
+        display: block;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+      .beyond {
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 24px 0 8px;
+      }
+      .beyond .tag {
+        color: var(--muted);
+      }
+      .beyond ul:last-child,
+      .beyond p:last-child {
+        margin-bottom: 0;
+      }
+      .handoff {
+        margin-top: 22px;
+        font-family: var(--display);
+        font-size: 16px;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .handoff b {
+        color: var(--warn);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      figure {
+        margin: 22px 0;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 16px 12px 10px;
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      figcaption {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        padding: 8px 8px 2px;
+        line-height: 1.5;
+      }
+      .dg {
+        overflow-x: auto;
+      }
+      .dg svg {
+        display: block;
+        width: 100%;
+        min-width: 540px;
+        max-width: 680px;
+        margin: 0 auto;
+        height: auto;
+      }
+      svg .n {
+        stroke-width: 1.6;
+      }
+      svg .t-client {
+        fill: var(--c-client-f);
+        stroke: var(--c-client-s);
+      }
+      svg .t-lb {
+        fill: var(--c-lb-f);
+        stroke: var(--c-lb-s);
+      }
+      svg .t-app {
+        fill: var(--c-app-f);
+        stroke: var(--c-app-s);
+      }
+      svg .t-db {
+        fill: var(--c-db-f);
+        stroke: var(--c-db-s);
+      }
+      svg .t-cache {
+        fill: var(--c-cache-f);
+        stroke: var(--c-cache-s);
+      }
+      svg .t-cdn {
+        fill: var(--c-cdn-f);
+        stroke: var(--c-cdn-s);
+      }
+      svg .t-mq {
+        fill: var(--c-mq-f);
+        stroke: var(--c-mq-s);
+      }
+      svg .slot {
+        fill: var(--surface);
+        stroke: var(--c-mq-s);
+        stroke-width: 1.2;
+      }
+      svg .zone {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.3;
+        stroke-dasharray: 5 5;
+      }
+      svg .zl {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        fill: var(--muted);
+      }
+      svg .nl {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 13.5px;
+        fill: var(--ink);
+      }
+      svg .ns {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg .nt {
+        font-family: var(--mono);
+        font-size: 11px;
+        fill: var(--muted);
+      }
+      svg .ed {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.6;
+      }
+      svg .ed.dash {
+        stroke-dasharray: 5 4;
+      }
+      svg .ah {
+        fill: var(--line);
+      }
+      svg .el {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--ink);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 5px;
+        stroke-linejoin: round;
+      }
+
+      /* latency bars */
+      .lat {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px 12px;
+        align-items: center;
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 6px 8px 4px;
+      }
+      .lat .bar {
+        height: 14px;
+        border-radius: 4px;
+        background: var(--c-cdn-s);
+        opacity: 0.85;
+      }
+      .lat .v {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+
+      /* sharding tables */
+      .shard {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        justify-content: center;
+        padding: 8px 4px;
+      }
+      .tbl {
+        display: grid;
+        border: 1.5px solid var(--c-db-s);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--c-db-f);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .tbl div {
+        padding: 3px 8px;
+        border-top: 1px solid var(--rule);
+        white-space: nowrap;
+      }
+      .tbl div.h {
+        border-top: 0;
+        font-weight: 600;
+        background: var(--surface);
+        color: var(--ink);
+      }
+      .tbl .dim {
+        color: var(--muted);
+      }
+      .arrow {
+        font-family: var(--display);
+        font-size: 26px;
+        color: var(--line);
+      }
+      .tname {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      /* exchange cards */
+      .xgrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      @media (max-width: 620px) {
+        .xgrid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .x {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .x h4 {
+        font-family: var(--display);
+        font-size: 17px;
+        margin: 0 0 4px;
+      }
+      .x .rule {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--c-mq-s);
+        margin-bottom: 6px;
+      }
+      .x p {
+        font-size: 15.5px;
+        margin: 0;
+      }
+      .x .src {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-top: 8px;
+      }
+
+      /* compare table */
+      .tw {
+        overflow-x: auto;
+        margin: 16px 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 15px;
+        min-width: 560px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+      th {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td:first-child {
+        font-family: var(--display);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      /* quiz */
+      details {
+        border-top: 1px solid var(--rule);
+        padding: 12px 0;
+      }
+      details:last-of-type {
+        border-bottom: 1px solid var(--rule);
+      }
+      summary {
+        cursor: pointer;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 17px;
+        list-style: none;
+        display: flex;
+        gap: 10px;
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::before {
+        content: "+";
+        font-family: var(--mono);
+        color: var(--accent);
+        width: 14px;
+        flex: none;
+      }
+      details[open] summary::before {
+        content: "–";
+      }
+      details p {
+        margin: 8px 0 0 24px;
+      }
+
+      .sources {
+        font-size: 15px;
+      }
+      .sources li {
+        margin-bottom: 4px;
+      }
+      .foot {
+        max-width: 720px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 28px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .rail a {
+          transition: background 0.15s;
+        }
+      }
+
+      /* ── additions shared by lectures 1–4 ── */
+      svg .n.down {
+        opacity: 0.5;
+        stroke-dasharray: 4 3;
+      }
+      svg .downx {
+        font-family: var(--mono);
+        font-size: 9.5px;
+        font-weight: 600;
+        fill: var(--warn);
+        letter-spacing: 0.06em;
+      }
+      svg .ed.bad {
+        stroke: var(--warn);
+      }
+      svg .ed.good {
+        stroke: var(--accent);
+      }
+      svg .ahb {
+        fill: var(--warn);
+      }
+      svg .el.bad,
+      svg .nt.bad {
+        fill: var(--warn);
+      }
+      svg .nt.strong {
+        fill: var(--ink);
+        font-weight: 600;
+      }
+      svg .cutx {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 18px;
+        fill: var(--warn);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 5px;
+      }
+      svg .zone.bad {
+        stroke: var(--warn);
+      }
+      svg .zl.bad {
+        fill: var(--warn);
+      }
+      svg .life {
+        stroke: var(--line);
+        stroke-width: 1.4;
+      }
+
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .side .cap {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* OSI-style stack */
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-width: 460px;
+      }
+      .stack a,
+      .stack div {
+        display: grid;
+        grid-template-columns: 34px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        border-radius: 10px;
+        background: var(--sunk);
+        color: var(--muted);
+        text-decoration: none;
+        font-family: var(--display);
+        font-size: 15px;
+      }
+      .stack .no {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .stack .ex {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .stack .hot {
+        background: var(--accent-soft);
+        color: var(--ink);
+        box-shadow: inset 0 0 0 1.5px var(--accent);
+        font-weight: 700;
+      }
+      .stack .hot .ex {
+        color: var(--accent);
+      }
+
+      /* pattern cards in hero */
+      .pgrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      @media (max-width: 520px) {
+        .pgrid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .pgrid a {
+        display: block;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px;
+        text-decoration: none;
+        color: var(--ink);
+      }
+      .pgrid a:hover {
+        border-color: var(--accent);
+      }
+      .pgrid b {
+        display: block;
+        font-family: var(--display);
+        font-size: 20px;
+        font-weight: 800;
+      }
+      .pgrid span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+        line-height: 1.45;
+      }
+      .pgrid .star {
+        color: var(--warn);
+      }
+
+      /* verdict pills in tables */
+      .pill {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 99px;
+        white-space: nowrap;
+      }
+      .pill.yes {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .pill.no {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      td .mono {
+        font-size: 13px;
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      @media (max-width: 620px) {
+        .two {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .two .x ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-size: 15.5px;
+      }
+      .two .x li {
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">
+          HLD lecture 4 · Microservices design patterns part 2 · study notes
+        </div>
+        <h1>Strangler, <span class="big">SAGA</span> &amp; CQRS</h1>
+        <p class="intro">
+          Part 1 showed how to split a system into services. This part covers
+          the three patterns you need once you actually do it: how to move off a
+          live monolith safely, how to keep data correct when one action spans
+          several databases, and how to join data that now lives in different
+          places.
+        </p>
+      </div>
+      <div class="side">
+        <span class="cap">The three patterns · ★ = lecturer's importance</span>
+        <div class="pgrid">
+          <a href="#s1"
+            ><b>Strangler</b
+            ><span>move a monolith to microservices bit by bit</span
+            ><span class="star">★★</span></a
+          >
+          <a href="#s3"
+            ><b>SAGA</b><span>transactions across many databases</span
+            ><span class="star">★★</span></a
+          >
+          <a href="#s6"
+            ><b>CQRS</b><span>queries and joins across service databases</span
+            ><span class="star">★</span></a
+          >
+        </div>
+      </div>
+    </header>
+
+    <div class="legend" aria-label="Diagram colour key">
+      <span>Colour key:</span>
+      <span
+        ><i style="background: var(--c-app-f); border-color: var(--c-app-s)"></i
+        >Service</span
+      >
+      <span
+        ><i style="background: var(--c-db-f); border-color: var(--c-db-s)"></i
+        >Database</span
+      >
+      <span
+        ><i style="background: var(--c-lb-f); border-color: var(--c-lb-s)"></i
+        >Controller / orchestrator</span
+      >
+      <span
+        ><i style="background: var(--c-mq-f); border-color: var(--c-mq-s)"></i
+        >Events / queue</span
+      >
+      <span
+        ><i
+          style="background: var(--c-cache-f); border-color: var(--c-cache-s)"
+        ></i
+        >Failure</span
+      >
+    </div>
+
+    <div class="wrap">
+      <nav class="rail" aria-label="Sections">
+        <p class="head">In this lecture</p>
+        <ol id="rail">
+          <li>
+            <a href="#s1"><span>01</span>Strangler pattern ★★</a>
+          </li>
+          <li>
+            <a href="#s2"><span>02</span>DB per service vs shared</a>
+          </li>
+          <li>
+            <a href="#s3"><span>03</span>SAGA ★★</a>
+          </li>
+          <li>
+            <a href="#s4"><span>04</span>Choreography vs orchestration</a>
+          </li>
+          <li>
+            <a href="#s5"><span>05</span>SAGA interview example</a>
+          </li>
+          <li>
+            <a href="#s6"><span>06</span>CQRS</a>
+          </li>
+          <li>
+            <a href="#s7"><span>→</span>Summary</a>
+          </li>
+          <li>
+            <a href="#revise"><span>?</span>Revision</a>
+          </li>
+        </ol>
+      </nav>
+
+      <main>
+        <section class="step" id="s1">
+          <div class="snum">
+            Refactoring to microservices
+            <span class="flag">★★ very important</span>
+          </div>
+          <h2>Strangler pattern</h2>
+          <p class="lede">
+            You already have a monolith running in production and want to move
+            it to microservices without a risky big-bang switch. Put a
+            <b>controller</b> in front that decides what share of the traffic
+            goes to the new microservices and what share stays on the monolith.
+            Then shift traffic over gradually.
+          </p>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A strangler fig is a vine that grows around an old tree. Bit by
+              bit it takes over, until the old tree is gone and only the fig is
+              standing. The new system grows around the old one the same way,
+              until the old one can be removed.
+            </p>
+          </div>
+          <figure>
+            <div class="dg" data-d="strangler"></div>
+            <figcaption>
+              The controller splits API traffic. It starts with 10% to the new
+              microservices, and moves more over as confidence grows.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              Build the new microservices for a flow (using decomposition
+              patterns from part 1).
+            </li>
+            <li>
+              Route a <b>small share</b> of traffic to them, say <b>10%</b> of
+              API calls (10 out of every 100). The other 90% still go to the
+              monolith.
+            </li>
+            <li>
+              <b>Something breaks?</b> Instantly set microservices back to
+              <b>0%</b>, so all traffic returns to the monolith. Users barely
+              notice. Fix the bug, then start again at 10%.
+            </li>
+            <li>As confidence grows: <b>20% → 50% → 100%</b>.</li>
+            <li>
+              At 100%, the monolith gets zero traffic for that flow. Once
+              everything has moved, <b>delete the monolith</b>.
+            </li>
+          </ol>
+          <p>
+            You can split by <b>percentage of traffic</b>, or by
+            <b>flow</b> (for example, move only the "order tracking" APIs
+            first).
+          </p>
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                Martin Fowler named this the <b>Strangler Fig</b> pattern in
+                2004, after the plant.
+              </li>
+              <li>
+                The controller is usually an <b>API gateway</b>, a reverse proxy
+                or a feature flag. Gradual percentage rollouts are the same idea
+                as <b>canary releases</b>.
+              </li>
+              <li>
+                The hard part is usually <b>data</b>: during migration both old
+                and new code may need the same records, so teams sync data
+                between them until the cut-over.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="step" id="s2">
+          <div class="snum">Data management in microservices</div>
+          <h2>Database per service vs shared database</h2>
+          <p class="lede">
+            Once you have services S1, S2 and S3, where does their data live?
+            Either <b>each service has its own database</b>, or
+            <b>all services share one</b>. The lecture explains why the shared
+            option doesn't hold up, and why the preferred option creates the two
+            problems SAGA and CQRS exist to solve.
+          </p>
+          <figure>
+            <div class="dg" data-d="dbs"></div>
+            <figcaption>
+              Left: each service owns its own database. Right: all services read
+              and write the same database.
+            </figcaption>
+          </figure>
+
+          <h3>Why a shared database doesn't work well</h3>
+          <p>
+            Example: an e-commerce app. S1 is Order, S2 is Inventory, S3 is
+            Payment.
+          </p>
+          <ul>
+            <li>
+              <b>Scaling:</b> orders run into millions while inventory is a
+              handful of products. With one shared database, you have to scale
+              the whole thing (more capacity, more memory) even though only
+              order data is growing.
+            </li>
+            <li>
+              <b>Schema changes become dangerous:</b> say there are 10 shared
+              tables and S3 wants to delete a column. It can't, because S1 and
+              S2 might use that table. Every change needs coordination, and
+              services are coupled through the database.
+            </li>
+            <li>
+              For a small application a shared DB can be fine, but it doesn't
+              scale.
+            </li>
+          </ul>
+          <p>
+            In fairness, a shared DB has two real advantages:
+            <b>joins are easy</b> (all tables are in one place) and
+            <b>transactions are easy</b> (ACID works across all tables).
+          </p>
+
+          <h3>Database per service (the preferred approach)</h3>
+          <figure>
+            <div class="dg" data-d="dbper"></div>
+            <figcaption>
+              Each service owns its data and can even use a different kind of
+              database. Others ask through its API, never by querying its
+              database.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>The rule:</b> no service queries another service's database. If
+              S2 needs data from D3, it calls <b>S3's API</b>.
+            </li>
+            <li>
+              Each service picks the right database: relational SQL, NoSQL like
+              MongoDB, PostgreSQL.
+            </li>
+            <li>
+              Each service's database <b>scales on its own</b>, with more
+              capacity only where traffic needs it.
+            </li>
+            <li>Teams own and change their schema without breaking anyone.</li>
+          </ul>
+          <p>But now you lose exactly what a shared DB made easy:</p>
+          <div class="two">
+            <div class="x">
+              <h4>Problem 1: transactions (ACID)</h4>
+              <p>
+                One action like "place order" touches Order DB, Inventory DB and
+                Payment DB. There's no single transaction across three
+                databases. <b>→ SAGA solves this.</b>
+              </p>
+            </div>
+            <div class="x">
+              <h4>Problem 2: query joins</h4>
+              <p>
+                Tables 1–5 live in D1, tables 6–8 in D2, tables 9–10 in D3. How
+                do you join table 6 with table 10? <b>→ CQRS solves this.</b>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="step" id="s3">
+          <div class="snum">
+            Distributed transactions <span class="flag">★★ very important</span>
+          </div>
+          <h2>SAGA pattern</h2>
+          <p class="lede">
+            A SAGA is a <b>sequence of local transactions</b>. Each service does
+            its own small ACID transaction in its own database, then publishes
+            an event that triggers the next service. If a step fails, the SAGA
+            runs <b>compensating transactions</b> backwards to undo what the
+            earlier steps did.
+          </p>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              Planning a trip: book the flight, then the hotel, then the car. If
+              the car booking fails, you don't pretend the whole thing never
+              happened. You cancel the hotel, then cancel the flight. Each
+              booking is its own deal, and each has a matching "undo".
+            </p>
+          </div>
+          <h3>The problem</h3>
+          <p>
+            "Place an order" touches three databases: Order DB (T1, T2),
+            Inventory DB (T3, T4), Payment DB (T5, T6). The order row is created
+            ✓, the inventory is updated ✓, then the
+            <b>payment record fails ✕</b>. ACID says all or nothing, so the
+            first two must be undone. But each database only knows its own local
+            transaction. Nobody can roll back all three at once.
+          </p>
+          <h3>The SAGA solution</h3>
+          <figure>
+            <div class="dg" data-d="saga"></div>
+            <figcaption>
+              Forward: each service commits locally and publishes an event. On
+              failure, events flow backwards and each service reverses its own
+              work.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              <b>Order service</b> creates the order in its DB (local
+              transaction) and publishes <code>OrderCreated</code>.
+            </li>
+            <li>
+              <b>Inventory service</b> receives it, reserves stock in its DB,
+              and publishes <code>StockReserved</code>.
+            </li>
+            <li>
+              <b>Payment service</b> tries to record the payment and
+              <b>fails</b>. It publishes a <b>failure / compensation event</b>:
+              <code>PaymentFailed</code>.
+            </li>
+            <li>
+              Inventory hears it, <b>reverses</b> its change (adds the stock
+              back), and publishes <code>StockReleased</code>.
+            </li>
+            <li>
+              Order hears that and <b>rolls back</b> (marks the order
+              cancelled).
+            </li>
+          </ol>
+          <p>
+            The one big transaction has been turned into a
+            <b>sequence of local transactions</b> with an undo for each.
+          </p>
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                A SAGA gives <b>eventual consistency</b>, not strict ACID. For a
+                moment, the order exists while payment hasn't failed yet. Design
+                the UI for it ("order pending…").
+              </li>
+              <li>
+                Compensation is a <b>new action</b>, not an erase: "refund" or
+                "cancel", recorded in history.
+              </li>
+              <li>
+                Events can be delivered twice, so each step and each
+                compensation must be <b>idempotent</b> (safe to repeat).
+              </li>
+              <li>
+                The alternative is two-phase commit (2PC), which locks all
+                databases until everyone agrees. It's strongly consistent but
+                slow and fragile. That's HLD lectures 20–21.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="step" id="s4">
+          <div class="snum">Two ways to run a SAGA</div>
+          <h2>Choreography vs orchestration</h2>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              <b>Choreography</b> is a flash mob. Nobody's in charge; each
+              dancer watches for a cue and does their move.
+              <b>Orchestration</b> is an orchestra with a conductor who points
+              at each section and says when to play, or when to stop.
+            </p>
+          </div>
+          <h3>Choreography (event-based)</h3>
+          <figure>
+            <div class="dg" data-d="chore"></div>
+            <figcaption>
+              Services publish events to a message broker and listen for the
+              events they care about.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              Each service does its work, <b>publishes an event</b>, and
+              <b>listens</b> for others' events (success or failure) to decide
+              its next move, including its own rollback.
+            </li>
+            <li>No central component, so it's simple to start with.</li>
+            <li>
+              <b>Drawback:</b> <b>cyclic dependency</b>. S1 listens to S2, S2
+              listens to S3, S3's failure goes back to S2 and S1… As services
+              grow, it gets hard to see or reason about the whole flow.
+            </li>
+          </ul>
+          <h3>Orchestration (a central coordinator)</h3>
+          <figure>
+            <div class="dg" data-d="orch"></div>
+            <figcaption>
+              A new component, the orchestrator, tells each service what to do
+              and, on failure, tells them to roll back.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              The <b>orchestrator</b> calls S1, then S2, then S3 in order.
+            </li>
+            <li>
+              If S3 fails, the orchestrator tells S2 and S1 to <b>roll back</b>.
+            </li>
+            <li>
+              The whole flow lives in one place, so it's easier to understand
+              and debug. The orchestrator is one more component to build and
+              keep running.
+            </li>
+          </ul>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Choreography</th>
+                  <th>Orchestration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Who drives</td>
+                  <td>Nobody. Services react to events</td>
+                  <td>A central orchestrator</td>
+                </tr>
+                <tr>
+                  <td>Communication</td>
+                  <td>Events through a message broker</td>
+                  <td>Orchestrator commands each service</td>
+                </tr>
+                <tr>
+                  <td>Best for</td>
+                  <td>Few services, simple flows</td>
+                  <td>Many services, complex flows</td>
+                </tr>
+                <tr>
+                  <td>Main drawback</td>
+                  <td>Cyclic dependencies, hard to follow</td>
+                  <td>Extra component, central point to manage</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="step" id="s5">
+          <div class="snum">The lecture's interview question</div>
+          <h2>SAGA example: paying from a wallet</h2>
+          <p class="lede">
+            Person A pays Person B <b>₹10</b> from their wallet balance (instead
+            of a UPI app like PhonePe or GPay). Two microservices are involved:
+            <b>Balance</b> (holds the wallet amount, ₹100) and
+            <b>Payment</b> (records every payment: who, to whom, how much,
+            when).
+          </p>
+          <figure>
+            <div class="dg" data-d="pay"></div>
+            <figcaption>
+              The balance is deducted first. The payment record then fails, so a
+              failure event makes Balance add the ₹10 back.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              Balance checks that A has at least ₹10, then deducts it:
+              <b>₹100 → ₹90</b>.
+            </li>
+            <li>
+              Payment tries to insert the record "A paid B ₹10 on this date" and
+              <b>fails</b>.
+            </li>
+            <li>
+              The problem: A's balance went down, but there's no payment in
+              history. The money has disappeared.
+            </li>
+            <li>
+              <b>SAGA fix:</b> Payment publishes a <b>failure event</b> with the
+              details (transaction 1 failed, ₹10).
+            </li>
+            <li>
+              Balance is listening (choreography). It runs a
+              <b>compensating transaction</b>, adding ₹10 back:
+              <b>₹90 → ₹100</b>.
+            </li>
+          </ol>
+          <p>
+            The answer interviewers want: "Use SAGA. Each service keeps its
+            local transaction, and on failure publishes an event so earlier
+            steps compensate."
+          </p>
+        </section>
+
+        <section class="step" id="s6">
+          <div class="snum">Querying across services</div>
+          <h2>CQRS: Command Query Responsibility Segregation</h2>
+          <p class="lede">
+            Split the system into two sides. <b>Commands</b> change data
+            (create, update, delete). <b>Queries</b> read data (select).
+            Commands go to each service's own database. Queries go to a
+            <b>separate read database</b> (a view) that already holds the data
+            combined.
+          </p>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A school keeps attendance in one office and marks in another.
+              Parents keep asking "show me attendance <em>and</em> marks
+              together". So a clerk keeps a combined report card folder, updated
+              whenever either office changes something. Parents read the folder
+              and never bother the two offices.
+            </p>
+          </div>
+          <h3>The problem it solves</h3>
+          <p>
+            With database per service, S1 owns table T1 (orders) and S2 owns T2.
+            You need a query that joins T1 and T2, for example an order history
+            showing items and stock. S1 isn't allowed to query S2's database
+            directly, so a normal SQL join is impossible.
+          </p>
+          <h3>How CQRS fixes it</h3>
+          <figure>
+            <div class="dg" data-d="cqrs"></div>
+            <figcaption>
+              Writes go to T1 and T2 as usual. Every change publishes an event
+              that updates a combined read view, and all reads go to that view.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Command side:</b> create, update and delete go to each
+              service's own database (T1, T2).
+            </li>
+            <li>
+              <b>Query side:</b> a separate DB (the <b>view</b>) holds the
+              joined data, for example an order-history table with fields from
+              both T1 and T2. All reads (select) go here.
+            </li>
+            <li>
+              <b>Keeping the view up to date:</b> whenever T1 or T2 has a
+              create, update or delete, <b>publish an event</b>. A listener
+              applies the same change to the view. Alternatively, use
+              <b>DB triggers or stored procedures</b> that run on every change.
+            </li>
+          </ul>
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                The read view is <b>eventually consistent</b>: it lags a little
+                behind the writes.
+              </li>
+              <li>
+                Reads and writes can now be <b>scaled separately</b>, which
+                suits read-heavy systems. The read store can even be a different
+                technology (a search index, a cache) shaped for the exact query.
+              </li>
+              <li>
+                CQRS is often paired with <b>event sourcing</b>, where the write
+                side stores the list of events itself and the read side is built
+                from them.
+              </li>
+              <li>
+                It adds real complexity (two models, sync logic). Use it when
+                cross-service reads or read load actually demand it.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="step" id="s7">
+          <div class="snum">One table to remember</div>
+          <h2>Summary</h2>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pattern</th>
+                  <th>Problem</th>
+                  <th>Idea</th>
+                  <th>Key words</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Strangler</td>
+                  <td>Migrating a live monolith safely</td>
+                  <td>
+                    Controller shifts traffic 10% → 100% to microservices, then
+                    the monolith is deleted
+                  </td>
+                  <td>refactoring, controller, rollback to 0%</td>
+                </tr>
+                <tr>
+                  <td>DB per service</td>
+                  <td>A shared DB is hard to scale and change</td>
+                  <td>Each service owns its DB, and others use its API</td>
+                  <td>independent scaling, polyglot DBs</td>
+                </tr>
+                <tr>
+                  <td>SAGA</td>
+                  <td>Transactions across several DBs</td>
+                  <td>
+                    Sequence of local transactions, with compensating events on
+                    failure
+                  </td>
+                  <td>choreography, orchestration, rollback</td>
+                </tr>
+                <tr>
+                  <td>CQRS</td>
+                  <td>Joins and queries across several DBs</td>
+                  <td>
+                    Writes to service DBs, reads from a combined view kept in
+                    sync by events
+                  </td>
+                  <td>command, query, read view, events / triggers</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="step" id="revise">
+          <div class="snum">Check yourself</div>
+          <h2>Revision questions</h2>
+          <p class="lede">Try answering out loud before opening each one.</p>
+          <details>
+            <summary>
+              How does the Strangler pattern migrate a monolith?
+            </summary>
+            <p>
+              A controller in front routes a small share of traffic (for example
+              10%) to the new microservices. If there are issues, it drops to 0%
+              and all traffic returns to the monolith. As confidence grows it
+              goes to 50% and then 100%, and the monolith is finally deleted.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Why is a shared database a poor fit for microservices?
+            </summary>
+            <p>
+              You must scale the whole DB even if one service needs it, and
+              schema changes (like dropping a column) can break other services
+              that use the same tables.
+            </p>
+          </details>
+          <details>
+            <summary>
+              What two problems does database-per-service create?
+            </summary>
+            <p>
+              Transactions spanning several databases (solved by SAGA) and joins
+              across databases (solved by CQRS).
+            </p>
+          </details>
+          <details>
+            <summary>Define SAGA in one line.</summary>
+            <p>
+              A sequence of local transactions. Each publishes an event to
+              trigger the next, and failures trigger compensating transactions
+              that undo earlier steps.
+            </p>
+          </details>
+          <details>
+            <summary>Choreography vs orchestration?</summary>
+            <p>
+              Choreography: services publish and listen to events with no
+              central controller. It's simple, but can lead to cyclic
+              dependencies. Orchestration: a central orchestrator calls each
+              service and tells them to roll back on failure.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Wallet balance deducted but the payment record failed. What do you
+              do?
+            </summary>
+            <p>
+              SAGA: the Payment service publishes a failure event, and the
+              Balance service listens and runs a compensating transaction,
+              adding the ₹10 back (₹90 → ₹100).
+            </p>
+          </details>
+          <details>
+            <summary>
+              What do C and Q stand for in CQRS, and how is the read side kept
+              updated?
+            </summary>
+            <p>
+              Command (create, update, delete) and Query (select). Every write
+              publishes an event, or fires a DB trigger or procedure, that
+              applies the same change to the read view.
+            </p>
+          </details>
+
+          <h3>Sources used to expand these notes</h3>
+          <ul class="sources">
+            <li>
+              <a
+                href="https://microservices.io/patterns/data/saga.html"
+                target="_blank"
+                rel="noopener"
+                >microservices.io: Saga pattern</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://learn.microsoft.com/en-us/azure/architecture/patterns/saga"
+                target="_blank"
+                rel="noopener"
+                >Microsoft Learn: Saga design pattern</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://learn.microsoft.com/en-us/azure/architecture/patterns/strangler-fig"
+                target="_blank"
+                rel="noopener"
+                >Microsoft Learn: Strangler Fig pattern</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://learn.microsoft.com/en-us/azure/architecture/patterns/cqrs"
+                target="_blank"
+                rel="noopener"
+                >Microsoft Learn: CQRS pattern</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://en.wikipedia.org/wiki/Strangler_fig_pattern"
+                target="_blank"
+                rel="noopener"
+                >Wikipedia: Strangler fig pattern</a
+              >
+            </li>
+          </ul>
+          <p class="foot">
+            Built from the lecture's audio transcript and whiteboard frames (31
+            min). Sections marked "Beyond the lecture" come from outside the
+            video.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      window.DIAGRAMS = {
+        strangler: {
+          h: 290,
+          alt: "Controller routes 90% of API traffic to the monolith and 10% to new microservices, increasing over time",
+          n: [
+            {
+              t: "app",
+              x: 20,
+              y: 30,
+              w: 170,
+              h: 110,
+              l: "Monolith",
+              s: "old code, still live",
+            },
+            { t: "zone", x: 420, y: 14, w: 206, h: 150, l: "MICROSERVICES" },
+            { t: "app", x: 436, y: 42, w: 84, h: 44, l: "S1" },
+            { t: "app", x: 530, y: 42, w: 84, h: 44, l: "S2" },
+            { t: "app", x: 436, y: 100, w: 84, h: 44, l: "S3" },
+            { t: "app", x: 530, y: 100, w: 84, h: 44, l: "S4" },
+            {
+              t: "lb",
+              x: 250,
+              y: 196,
+              w: 140,
+              h: 52,
+              l: "Controller",
+              s: "splits traffic",
+            },
+            {
+              t: "client",
+              x: 20,
+              y: 200,
+              w: 140,
+              h: 44,
+              l: "API traffic",
+              s: "100 requests",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [190, 85],
+                [420, 85],
+              ],
+              dash: 1,
+              l: "flows rebuilt as services",
+              at: [305, 77],
+            },
+            {
+              p: [
+                [160, 222],
+                [250, 222],
+              ],
+            },
+            {
+              p: [
+                [290, 196],
+                [150, 140],
+              ],
+              l: "90%",
+              at: [206, 176],
+              a: "end",
+            },
+            {
+              p: [
+                [350, 196],
+                [470, 164],
+              ],
+              good: 1,
+              l: "10% → 20% → 50% → 100%",
+              at: [400, 214],
+              a: "start",
+            },
+          ],
+          notes: [
+            {
+              x: 320,
+              y: 282,
+              l: "bug? route back to 0% → fix → retry · at 100%, delete the monolith",
+              a: "middle",
+            },
+          ],
+        },
+
+        dbs: {
+          h: 250,
+          alt: "Left: three services each with own database. Right: three services sharing one database.",
+          n: [
+            {
+              t: "zone",
+              x: 10,
+              y: 10,
+              w: 300,
+              h: 228,
+              l: "DATABASE PER SERVICE",
+            },
+            { t: "app", x: 26, y: 40, w: 84, h: 42, l: "S1" },
+            { t: "app", x: 118, y: 40, w: 84, h: 42, l: "S2" },
+            { t: "app", x: 210, y: 40, w: 84, h: 42, l: "S3" },
+            { t: "db", x: 33, y: 130, w: 70, h: 60, l: "D1" },
+            { t: "db", x: 125, y: 130, w: 70, h: 60, l: "D2" },
+            { t: "db", x: 217, y: 130, w: 70, h: 60, l: "D3" },
+            { t: "zone", x: 330, y: 10, w: 300, h: 228, l: "SHARED DATABASE" },
+            { t: "app", x: 346, y: 40, w: 84, h: 42, l: "S1" },
+            { t: "app", x: 438, y: 40, w: 84, h: 42, l: "S2" },
+            { t: "app", x: 530, y: 40, w: 84, h: 42, l: "S3" },
+            {
+              t: "db",
+              x: 420,
+              y: 128,
+              w: 120,
+              h: 70,
+              l: "One DB",
+              s: "all tables",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [68, 82],
+                [68, 130],
+              ],
+            },
+            {
+              p: [
+                [160, 82],
+                [160, 130],
+              ],
+            },
+            {
+              p: [
+                [252, 82],
+                [252, 130],
+              ],
+            },
+            {
+              p: [
+                [388, 82],
+                [450, 128],
+              ],
+            },
+            {
+              p: [
+                [480, 82],
+                [480, 128],
+              ],
+            },
+            {
+              p: [
+                [572, 82],
+                [510, 128],
+              ],
+            },
+          ],
+          notes: [
+            { x: 160, y: 226, l: "each owns its data", a: "middle" },
+            { x: 480, y: 226, l: "everyone touches everything", a: "middle" },
+          ],
+        },
+
+        dbper: {
+          h: 260,
+          alt: "Order, Inventory and Payment services each with a different database type; services talk via APIs, not each other’s databases",
+          n: [
+            { t: "app", x: 30, y: 24, w: 150, h: 52, l: "S1 · Order" },
+            { t: "app", x: 245, y: 24, w: 150, h: 52, l: "S2 · Inventory" },
+            { t: "app", x: 460, y: 24, w: 150, h: 52, l: "S3 · Payment" },
+            {
+              t: "db",
+              x: 50,
+              y: 140,
+              w: 110,
+              h: 72,
+              l: "D1",
+              s: "SQL (relational)",
+            },
+            {
+              t: "db",
+              x: 265,
+              y: 140,
+              w: 110,
+              h: 72,
+              l: "D2",
+              s: "NoSQL · MongoDB",
+            },
+            {
+              t: "db",
+              x: 480,
+              y: 140,
+              w: 110,
+              h: 72,
+              l: "D3",
+              s: "PostgreSQL",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [105, 76],
+                [105, 140],
+              ],
+            },
+            {
+              p: [
+                [320, 76],
+                [320, 140],
+              ],
+            },
+            {
+              p: [
+                [535, 76],
+                [535, 140],
+              ],
+            },
+            {
+              p: [
+                [395, 44],
+                [460, 44],
+              ],
+              both: 1,
+              good: 1,
+              l: "API call",
+              at: [427, 36],
+            },
+            {
+              p: [
+                [360, 76],
+                [490, 150],
+              ],
+              noarrow: 1,
+              bad: 1,
+              dash: 1,
+              cut: [425, 113],
+            },
+          ],
+          notes: [
+            {
+              x: 320,
+              y: 246,
+              l: "✕ never query another service’s DB directly · ask its API",
+              a: "middle",
+              bad: 1,
+            },
+          ],
+        },
+
+        saga: {
+          h: 300,
+          alt: "Order, Inventory, Payment services; forward events OrderCreated, StockReserved; payment fails; compensating events flow back",
+          n: [
+            {
+              t: "app",
+              x: 10,
+              y: 56,
+              w: 140,
+              h: 60,
+              l: "Order service",
+              s: "create order",
+            },
+            {
+              t: "app",
+              x: 250,
+              y: 56,
+              w: 140,
+              h: 60,
+              l: "Inventory service",
+              s: "reserve stock",
+            },
+            {
+              t: "app",
+              x: 490,
+              y: 56,
+              w: 140,
+              h: 60,
+              l: "Payment service",
+              s: "record payment ✕",
+              c: "cache",
+            },
+            { t: "db", x: 30, y: 168, w: 100, h: 62, l: "Order DB" },
+            { t: "db", x: 270, y: 168, w: 100, h: 62, l: "Inventory DB" },
+            {
+              t: "db",
+              x: 510,
+              y: 168,
+              w: 100,
+              h: 62,
+              l: "Payment DB",
+              c: "cache",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [150, 72],
+                [250, 72],
+              ],
+              good: 1,
+              l: "OrderCreated",
+              at: [200, 64],
+            },
+            {
+              p: [
+                [390, 72],
+                [490, 72],
+              ],
+              good: 1,
+              l: "StockReserved",
+              at: [440, 64],
+            },
+            {
+              p: [
+                [490, 100],
+                [390, 100],
+              ],
+              bad: 1,
+              dash: 1,
+              l: "PaymentFailed",
+              at: [440, 122],
+            },
+            {
+              p: [
+                [250, 100],
+                [150, 100],
+              ],
+              bad: 1,
+              dash: 1,
+              l: "StockReleased",
+              at: [200, 122],
+            },
+            {
+              p: [
+                [80, 116],
+                [80, 168],
+              ],
+            },
+            {
+              p: [
+                [320, 116],
+                [320, 168],
+              ],
+            },
+            {
+              p: [
+                [560, 116],
+                [560, 168],
+              ],
+              bad: 1,
+            },
+          ],
+          notes: [
+            { x: 80, y: 250, l: "rolled back: order cancelled", a: "middle" },
+            { x: 320, y: 250, l: "reversed: stock added back", a: "middle" },
+            { x: 560, y: 250, l: "local txn failed", a: "middle", bad: 1 },
+            {
+              x: 320,
+              y: 286,
+              l: "→ forward events   ·   ← compensating events",
+              a: "middle",
+              strong: 1,
+            },
+          ],
+        },
+
+        chore: {
+          h: 270,
+          alt: "Choreography: services publish and listen to events on a shared broker",
+          n: [
+            { t: "app", x: 30, y: 20, w: 130, h: 48, l: "S1 · Order" },
+            { t: "app", x: 480, y: 20, w: 130, h: 48, l: "S2 · Inventory" },
+            {
+              t: "mq",
+              x: 220,
+              y: 92,
+              w: 200,
+              h: 76,
+              l: "Message broker",
+              slots: 1,
+            },
+            { t: "app", x: 255, y: 204, w: 130, h: 48, l: "S3 · Payment" },
+          ],
+          e: [
+            {
+              p: [
+                [160, 44],
+                [240, 92],
+              ],
+              both: 1,
+              l: "publish / listen",
+              at: [190, 82],
+              a: "end",
+            },
+            {
+              p: [
+                [480, 44],
+                [400, 92],
+              ],
+              both: 1,
+              l: "publish / listen",
+              at: [450, 82],
+              a: "start",
+            },
+            {
+              p: [
+                [320, 204],
+                [320, 168],
+              ],
+              both: 1,
+            },
+          ],
+          notes: [
+            {
+              x: 420,
+              y: 236,
+              l: "no one in charge · each reacts to events",
+              a: "start",
+            },
+          ],
+        },
+
+        orch: {
+          h: 250,
+          alt: "Orchestration: an orchestrator calls S1, S2, S3 and tells them to roll back on failure",
+          n: [
+            {
+              t: "lb",
+              x: 235,
+              y: 14,
+              w: 170,
+              h: 58,
+              l: "Orchestrator",
+              s: "knows the whole flow",
+            },
+            { t: "app", x: 20, y: 176, w: 150, h: 48, l: "S1 · Order" },
+            { t: "app", x: 245, y: 176, w: 150, h: 48, l: "S2 · Inventory" },
+            { t: "app", x: 470, y: 176, w: 150, h: 48, l: "S3 · Payment" },
+          ],
+          e: [
+            {
+              p: [
+                [275, 72],
+                [95, 176],
+              ],
+              both: 1,
+              l: "① do step",
+              at: [172, 114],
+              a: "end",
+            },
+            {
+              p: [
+                [320, 72],
+                [320, 176],
+              ],
+              both: 1,
+              l: "②",
+              at: [330, 128],
+              a: "start",
+            },
+            {
+              p: [
+                [365, 72],
+                [545, 176],
+              ],
+              both: 1,
+              l: "③ fails → “S1, S2: roll back”",
+              at: [468, 114],
+              a: "start",
+            },
+          ],
+        },
+
+        pay: {
+          h: 290,
+          alt: "Person A pays 10 rupees; balance deducted from 100 to 90; payment record fails; failure event; balance compensates back to 100",
+          n: [
+            {
+              t: "client",
+              x: 10,
+              y: 20,
+              w: 140,
+              h: 52,
+              l: "Person A",
+              s: "pays ₹10 to B",
+            },
+            {
+              t: "app",
+              x: 240,
+              y: 20,
+              w: 150,
+              h: 56,
+              l: "Balance service",
+              s: "₹100 → ₹90",
+            },
+            {
+              t: "app",
+              x: 480,
+              y: 20,
+              w: 150,
+              h: 56,
+              l: "Payment service",
+              s: "insert record ✕",
+              c: "cache",
+            },
+            {
+              t: "db",
+              x: 265,
+              y: 140,
+              w: 100,
+              h: 66,
+              l: "Balance DB",
+              s: "100 → 90 → 100",
+            },
+            {
+              t: "db",
+              x: 505,
+              y: 140,
+              w: 100,
+              h: 66,
+              l: "Payment DB",
+              s: "no record",
+              c: "cache",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [150, 46],
+                [240, 46],
+              ],
+              l: "① pay",
+              at: [195, 38],
+            },
+            {
+              p: [
+                [390, 38],
+                [480, 38],
+              ],
+              l: "② record",
+              at: [435, 30],
+            },
+            {
+              p: [
+                [480, 64],
+                [390, 64],
+              ],
+              bad: 1,
+              dash: 1,
+            },
+            {
+              p: [
+                [315, 76],
+                [315, 140],
+              ],
+              good: 1,
+            },
+            {
+              p: [
+                [555, 76],
+                [555, 140],
+              ],
+              bad: 1,
+            },
+          ],
+          notes: [
+            { x: 435, y: 96, l: "③ failure event", a: "middle", bad: 1 },
+            { x: 435, y: 110, l: "txn 1 · ₹10", a: "middle", bad: 1 },
+            { x: 305, y: 112, l: "④ +₹10 back", a: "end", strong: 1 },
+            {
+              x: 320,
+              y: 262,
+              l: "balance back to ₹100 · A isn’t charged for a payment that never happened",
+              a: "middle",
+              strong: 1,
+            },
+          ],
+        },
+
+        cqrs: {
+          h: 320,
+          alt: "Writes go to T1 and T2; each change publishes an event that updates a combined read view; queries read from the view",
+          n: [
+            { t: "app", x: 60, y: 24, w: 140, h: 48, l: "S1 · Order" },
+            { t: "app", x: 440, y: 24, w: 140, h: 48, l: "S2 · Inventory" },
+            { t: "db", x: 80, y: 100, w: 100, h: 64, l: "T1", s: "order DB" },
+            {
+              t: "db",
+              x: 460,
+              y: 100,
+              w: 100,
+              h: 64,
+              l: "T2",
+              s: "inventory DB",
+            },
+            { t: "mq", x: 230, y: 176, w: 180, h: 44, l: "Change events" },
+            {
+              t: "db",
+              x: 250,
+              y: 240,
+              w: 140,
+              h: 66,
+              l: "Read view",
+              s: "T1 + T2 joined",
+            },
+            {
+              t: "client",
+              x: 30,
+              y: 252,
+              w: 140,
+              h: 44,
+              l: "Queries",
+              s: "SELECT",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [130, 72],
+                [130, 100],
+              ],
+            },
+            {
+              p: [
+                [510, 72],
+                [510, 100],
+              ],
+            },
+            {
+              p: [
+                [150, 164],
+                [250, 190],
+              ],
+            },
+            {
+              p: [
+                [490, 164],
+                [390, 190],
+              ],
+            },
+            {
+              p: [
+                [320, 220],
+                [320, 240],
+              ],
+            },
+            {
+              p: [
+                [170, 274],
+                [250, 274],
+              ],
+              good: 1,
+            },
+          ],
+          notes: [
+            {
+              x: 320,
+              y: 44,
+              l: "COMMANDS: create · update · delete",
+              a: "middle",
+              strong: 1,
+            },
+            { x: 320, y: 60, l: "go to each service’s own DB", a: "middle" },
+            {
+              x: 320,
+              y: 156,
+              l: "every write publishes an event",
+              a: "middle",
+            },
+            { x: 430, y: 278, l: "(or DB triggers / procedures)", a: "start" },
+          ],
+        },
+      };
+    </script>
+    <script>
+      (function () {
+        var D = window.DIAGRAMS || {};
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        }
+        function label(n, cx, ty) {
+          var o = "";
+          if (n.s) {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty - 3) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            o +=
+              '<text class="ns" x="' +
+              cx +
+              '" y="' +
+              (ty + 12) +
+              '" text-anchor="middle">' +
+              esc(n.s) +
+              "</text>";
+          } else if (n.l) {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty + 5) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+          }
+          return o;
+        }
+        function node(n) {
+          var o = "",
+            cx = n.x + n.w / 2,
+            cls = "n t-" + (n.c || n.t) + (n.down ? " down" : "");
+          if (n.t === "zone") {
+            return (
+              '<rect class="zone' +
+              (n.bad ? " bad" : "") +
+              '" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="12"/>' +
+              (n.l
+                ? '<text class="zl' +
+                  (n.bad ? " bad" : "") +
+                  '" x="' +
+                  (n.x + 12) +
+                  '" y="' +
+                  (n.y + 17) +
+                  '">' +
+                  esc(n.l) +
+                  "</text>"
+                : "")
+            );
+          }
+          if (n.t === "line") {
+            // plain vertical/horizontal rule, e.g. sequence-diagram lifeline
+            return (
+              '<line class="life" x1="' +
+              n.x +
+              '" y1="' +
+              n.y +
+              '" x2="' +
+              (n.x + n.w) +
+              '" y2="' +
+              (n.y + n.h) +
+              '"/>'
+            );
+          }
+          var ty = n.y + n.h / 2;
+          if (n.t === "db") {
+            var e = 8,
+              x = n.x,
+              y = n.y,
+              w = n.w,
+              h = n.h;
+            o +=
+              '<path class="' +
+              cls.replace("t-db", "t-" + (n.c || "db")) +
+              '" d="M' +
+              x +
+              "," +
+              (y + e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              (x + w) +
+              "," +
+              (y + e) +
+              " V" +
+              (y + h - e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              x +
+              "," +
+              (y + h - e) +
+              ' Z"/>';
+            o +=
+              '<ellipse class="' +
+              cls.replace("t-db", "t-" + (n.c || "db")) +
+              '" cx="' +
+              cx +
+              '" cy="' +
+              (y + e) +
+              '" rx="' +
+              w / 2 +
+              '" ry="' +
+              e +
+              '"/>';
+            ty += e / 2;
+          } else if (n.t === "circle") {
+            o +=
+              '<circle class="' +
+              cls.replace("t-circle", "t-" + (n.c || "app")) +
+              '" cx="' +
+              cx +
+              '" cy="' +
+              ty +
+              '" r="' +
+              n.w / 2 +
+              '"/>';
+          } else {
+            o +=
+              '<rect class="' +
+              cls +
+              '" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="9"/>';
+          }
+          if (n.slots) {
+            var pad = 16,
+              cw = (n.w - pad * 2 - 4 * 6) / 5,
+              cy = n.y + n.h - 30;
+            for (var i = 0; i < 5; i++)
+              o +=
+                '<rect class="slot" x="' +
+                (n.x + pad + i * (cw + 6)) +
+                '" y="' +
+                cy +
+                '" width="' +
+                cw +
+                '" height="16" rx="3"/>';
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (n.y + 24) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            return o;
+          }
+          o += label(n, cx, ty);
+          if (n.down) {
+            o +=
+              '<text class="downx" x="' +
+              (n.x + n.w - 4) +
+              '" y="' +
+              (n.y + 14) +
+              '" text-anchor="end">DOWN</text>';
+          }
+          return o;
+        }
+        function svg(key, d) {
+          var mid = "ah-" + key,
+            mbad = "ahb-" + key;
+          var o =
+            '<svg viewBox="0 0 640 ' +
+            d.h +
+            '" role="img" aria-label="' +
+            esc(d.alt || "Diagram") +
+            '">';
+          o +=
+            '<defs><marker id="' +
+            mid +
+            '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>' +
+            '<marker id="' +
+            mbad +
+            '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahb" d="M0,0 L10,5 L0,10 z"/></marker></defs>';
+          d.n.forEach(function (n) {
+            if (n.t === "zone" || n.t === "line") o += node(n);
+          });
+          (d.e || []).forEach(function (e) {
+            var pts = e.p
+              .map(function (p) {
+                return p.join(",");
+              })
+              .join(" ");
+            var m = e.bad ? mbad : mid;
+            o +=
+              '<polyline class="ed' +
+              (e.dash ? " dash" : "") +
+              (e.bad ? " bad" : "") +
+              (e.good ? " good" : "") +
+              '" points="' +
+              pts +
+              '"' +
+              (e.noarrow ? "" : ' marker-end="url(#' + m + ')"') +
+              (e.both ? ' marker-start="url(#' + m + ')"' : "") +
+              "/>";
+            if (e.cut) {
+              // a ✕ on a broken link
+              var c = e.cut;
+              o +=
+                '<text class="cutx" x="' +
+                c[0] +
+                '" y="' +
+                (c[1] + 6) +
+                '" text-anchor="middle">✕</text>';
+            }
+          });
+          d.n.forEach(function (n) {
+            if (n.t !== "zone" && n.t !== "line") o += node(n);
+          });
+          (d.e || []).forEach(function (e) {
+            if (e.l)
+              o +=
+                '<text class="el' +
+                (e.bad ? " bad" : "") +
+                '" x="' +
+                e.at[0] +
+                '" y="' +
+                e.at[1] +
+                '" text-anchor="' +
+                (e.a || "middle") +
+                '">' +
+                esc(e.l) +
+                "</text>";
+          });
+          (d.notes || []).forEach(function (t) {
+            o +=
+              '<text class="nt' +
+              (t.bad ? " bad" : "") +
+              (t.strong ? " strong" : "") +
+              '" x="' +
+              t.x +
+              '" y="' +
+              t.y +
+              '" text-anchor="' +
+              (t.a || "start") +
+              '">' +
+              esc(t.l) +
+              "</text>";
+          });
+          return o + "</svg>";
+        }
+        document.querySelectorAll(".dg[data-d]").forEach(function (el) {
+          var k = el.getAttribute("data-d");
+          if (D[k]) el.innerHTML = svg(k, D[k]);
+        });
+        var links = [].slice.call(document.querySelectorAll("#rail a"));
+        if (links.length && "IntersectionObserver" in window) {
+          var io = new IntersectionObserver(
+            function (ents) {
+              ents.forEach(function (en) {
+                if (en.isIntersecting) {
+                  links.forEach(function (a) {
+                    a.classList.toggle(
+                      "on",
+                      a.getAttribute("href") === "#" + en.target.id,
+                    );
+                  });
+                }
+              });
+            },
+            { rootMargin: "-30% 0px -60% 0px" },
+          );
+          document.querySelectorAll("main .step").forEach(function (sec) {
+            io.observe(sec);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>
