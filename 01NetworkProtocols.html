@@ -1045,6 +1045,9 @@
             <a href="#s9"><span>→</span>Which one, when</a>
           </li>
           <li>
+            <a href="#extra"><span>+</span>Good to know</a>
+          </li>
+          <li>
             <a href="#revise"><span>?</span>Revision</a>
           </li>
         </ol>
@@ -1621,6 +1624,231 @@
               </tbody>
             </table>
           </div>
+        </section>
+
+        <style>
+          .wf {
+            display: grid;
+            gap: 6px;
+            min-width: 520px;
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 6px 4px;
+          }
+          .wr {
+            display: grid;
+            grid-template-columns: 120px 1fr 150px;
+            align-items: center;
+            gap: 10px;
+          }
+          .wr i {
+            display: block;
+            height: 14px;
+            border-radius: 4px;
+            background: var(--c-app-s);
+            opacity: 0.8;
+          }
+          .wr i.slow {
+            background: var(--warn);
+            opacity: 1;
+          }
+          .wr em {
+            font-style: normal;
+            color: var(--muted);
+          }
+          .bloom {
+            display: flex;
+            gap: 4px;
+            font-family: var(--mono);
+            font-size: 13px;
+            padding: 6px 4px;
+            min-width: 420px;
+          }
+          .bloom span {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 6px;
+            background: var(--sunk);
+            color: var(--muted);
+          }
+          .bloom span.on {
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 600;
+          }
+        </style>
+        <section class="step" id="extra">
+          <div class="snum">
+            Beyond the course
+            <span class="flag">good to know as an engineer</span>
+          </div>
+          <h2>Good to know as an engineer</h2>
+          <p class="lede">
+            These aren't in the lecture, but you'll meet them on the job almost
+            immediately, usually while debugging.
+          </p>
+
+          <h3>How HTTPS proves who it is: the TLS handshake</h3>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              Before telling a stranger a secret, you check their government ID
+              and agree on a code language only the two of you know. The ID is
+              the certificate, the government is the certificate authority, and
+              the code language is the session key.
+            </p>
+          </div>
+          <ol>
+            <li>
+              The client says hello and sends its supported ciphers plus a key
+              share.
+            </li>
+            <li>
+              The server replies with its key share and its <b>certificate</b>,
+              which a trusted <b>certificate authority</b> (CA) has signed.
+            </li>
+            <li>
+              The client checks the certificate chain up to a CA it trusts, and
+              that the name matches the domain.
+            </li>
+            <li>
+              Both sides derive the same <b>session key</b> and encrypt
+              everything after that. TLS 1.3 does this in one round trip.
+            </li>
+          </ol>
+          <p>
+            <b>Why you care:</b> "certificate expired" is a surprisingly common
+            cause of real outages. Automate renewal (for example Let's Encrypt).
+            Handshakes cost a round trip, which is one reason connection reuse
+            matters (below).
+          </p>
+
+          <h3>Server push without WebSockets</h3>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Technique</th>
+                  <th>How it works</th>
+                  <th>Use when</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Short polling</td>
+                  <td>The client asks "anything new?" every few seconds.</td>
+                  <td>Almost never. Wasteful.</td>
+                </tr>
+                <tr>
+                  <td>Long polling</td>
+                  <td>
+                    The client asks, and the server
+                    <b>holds the request open</b> until there's data or a
+                    timeout. Then the client asks again.
+                  </td>
+                  <td>A fallback where WebSockets are blocked.</td>
+                </tr>
+                <tr>
+                  <td>Server-Sent Events (SSE)</td>
+                  <td>
+                    One long HTTP response the server keeps writing events into.
+                    <b>One-way</b> (server → client), with auto-reconnect built
+                    in.
+                  </td>
+                  <td>
+                    Notifications, live scores, stock tickers, streaming AI
+                    responses.
+                  </td>
+                </tr>
+                <tr>
+                  <td>WebSocket</td>
+                  <td>A full two-way persistent connection.</td>
+                  <td>Chat, multiplayer games, collaborative editing.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>REST vs gRPC vs GraphQL</h3>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>REST</th>
+                  <th>gRPC</th>
+                  <th>GraphQL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Shape</td>
+                  <td>Resources + HTTP verbs (<code>GET /users/1</code>)</td>
+                  <td>
+                    Remote function calls defined in a <code>.proto</code> file
+                  </td>
+                  <td>
+                    One endpoint. The client writes a query for exactly the
+                    fields it wants.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Format</td>
+                  <td>Usually JSON</td>
+                  <td>Protobuf (binary, compact) over HTTP/2</td>
+                  <td>JSON</td>
+                </tr>
+                <tr>
+                  <td>Strength</td>
+                  <td>Simple, cacheable, universal</td>
+                  <td>
+                    Fast, typed, streaming. Great
+                    <b>between internal services</b>.
+                  </td>
+                  <td>
+                    Avoids over- and under-fetching. Great for mobile and
+                    complex UIs.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Weakness</td>
+                  <td>Many round trips for nested data</td>
+                  <td>Not browser-native, harder to debug by eye</td>
+                  <td>
+                    Caching and rate limiting are harder. Clients can write
+                    costly queries.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>The settings that decide real-world latency</h3>
+          <ul>
+            <li>
+              <b>Timeouts on every network call.</b> Without one, a slow
+              dependency ties up your threads forever. It's the most common
+              cause of cascading failures.
+            </li>
+            <li>
+              <b>Retries with exponential backoff + jitter</b> (wait 100 ms, 200
+              ms, 400 ms… plus randomness), and only for idempotent operations.
+              Retrying instantly in sync with everyone else turns a blip into an
+              outage.
+            </li>
+            <li>
+              <b>Connection pooling and keep-alive:</b> reuse open TCP/TLS
+              connections instead of paying the handshake cost on every request.
+              Database drivers and HTTP clients both do this.
+            </li>
+            <li>
+              <b>HTTP status code families:</b> 2xx success, 3xx redirect, 4xx
+              <em>your</em> fault (bad request, unauthorised, not found, 429 too
+              many requests), 5xx <em>server's</em> fault. Retry 5xx and 429,
+              but not most 4xx.
+            </li>
+          </ul>
         </section>
 
         <section class="step" id="revise">

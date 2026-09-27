@@ -860,6 +860,9 @@
             <a href="#final"><span>→</span>Full picture</a>
           </li>
           <li>
+            <a href="#extra"><span>+</span>Good to know</a>
+          </li>
+          <li>
             <a href="#revise"><span>?</span>Revision</a>
           </li>
         </ol>
@@ -1996,6 +1999,332 @@
         </section>
 
         <!-- ───────────── REVISION ───────────── -->
+        <style>
+          .wf {
+            display: grid;
+            gap: 6px;
+            min-width: 520px;
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 6px 4px;
+          }
+          .wr {
+            display: grid;
+            grid-template-columns: 120px 1fr 150px;
+            align-items: center;
+            gap: 10px;
+          }
+          .wr i {
+            display: block;
+            height: 14px;
+            border-radius: 4px;
+            background: var(--c-app-s);
+            opacity: 0.8;
+          }
+          .wr i.slow {
+            background: var(--warn);
+            opacity: 1;
+          }
+          .wr em {
+            font-style: normal;
+            color: var(--muted);
+          }
+          .bloom {
+            display: flex;
+            gap: 4px;
+            font-family: var(--mono);
+            font-size: 13px;
+            padding: 6px 4px;
+            min-width: 420px;
+          }
+          .bloom span {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 6px;
+            background: var(--sunk);
+            color: var(--muted);
+          }
+          .bloom span.on {
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 600;
+          }
+        </style>
+        <style>
+          svg .ed.bad {
+            stroke: var(--warn);
+          }
+          svg .ahb {
+            fill: var(--warn);
+          }
+          svg .el.bad,
+          svg .nt.bad {
+            fill: var(--warn);
+          }
+          svg .ed.good {
+            stroke: var(--accent);
+          }
+          svg .nt.strong {
+            fill: var(--ink);
+            font-weight: 600;
+          }
+        </style>
+        <section class="step" id="extra">
+          <div class="snum">
+            Beyond the course
+            <span class="flag">good to know as an engineer</span>
+          </div>
+          <h2>Good to know as an engineer</h2>
+          <p class="lede">
+            The nine steps get you to a million users. These are the practices
+            that keep that system healthy day to day.
+          </p>
+
+          <h3>SLI, SLO, SLA: defining "fast enough" and "up enough"</h3>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Term</th>
+                  <th>Meaning</th>
+                  <th>Example</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>SLI (indicator)</td>
+                  <td>What you measure</td>
+                  <td>% of requests answered in under 300 ms</td>
+                </tr>
+                <tr>
+                  <td>SLO (objective)</td>
+                  <td>Your internal target</td>
+                  <td>99.9% of requests under 300 ms over 30 days</td>
+                </tr>
+                <tr>
+                  <td>SLA (agreement)</td>
+                  <td>A promise to customers, with penalties</td>
+                  <td>99.5% uptime or we refund 10%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The gap between 100% and the SLO is your <b>error budget</b>. While
+            budget remains, ship fast. When it runs out, slow down and fix
+            reliability. Measure <b>p99 latency</b> (the slowest 1%), not the
+            average, because averages hide the users having a bad time.
+          </p>
+
+          <h3>Cache stampede (thundering herd)</h3>
+          <figure>
+            <div class="dg">
+              <svg
+                viewBox="0 0 640 230"
+                role="img"
+                aria-label="Many requests miss an expired hot cache key and all hit the database at once"
+              >
+                <defs>
+                  <marker
+                    id="ah-stampede"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="ah" d="M0,0 L10,5 L0,10 z" />
+                  </marker>
+                  <marker
+                    id="ahb-stampede"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="ahb" d="M0,0 L10,5 L0,10 z" />
+                  </marker>
+                </defs>
+                <polyline
+                  class="ed"
+                  points="140,50 240,50"
+                  marker-end="url(#ah-stampede)"
+                />
+                <polyline
+                  class="ed bad"
+                  points="110,76 480,128"
+                  marker-end="url(#ahb-stampede)"
+                />
+                <polyline
+                  class="ed bad"
+                  points="80,76 480,148"
+                  marker-end="url(#ahb-stampede)"
+                />
+                <polyline
+                  class="ed bad"
+                  points="50,76 480,168"
+                  marker-end="url(#ahb-stampede)"
+                />
+                <rect
+                  class="n t-client"
+                  x="10"
+                  y="24"
+                  width="130"
+                  height="52"
+                  rx="9"
+                />
+                <text class="nl" x="75" y="47" text-anchor="middle">
+                  1,000 requests
+                </text>
+                <text class="ns" x="75" y="62" text-anchor="middle">
+                  same hot key
+                </text>
+                <rect
+                  class="n t-cache"
+                  x="240"
+                  y="24"
+                  width="160"
+                  height="52"
+                  rx="9"
+                />
+                <text class="nl" x="320" y="47" text-anchor="middle">
+                  Cache
+                </text>
+                <text class="ns" x="320" y="62" text-anchor="middle">
+                  key just expired
+                </text>
+                <path
+                  class="n t-db"
+                  d="M480,118 A70,8 0 0 1 620,118 V178 A70,8 0 0 1 480,178 Z"
+                />
+                <ellipse class="n t-db" cx="550" cy="118" rx="70" ry="8" />
+                <text class="nl" x="550" y="149" text-anchor="middle">
+                  Database
+                </text>
+                <text class="ns" x="550" y="164" text-anchor="middle">
+                  overloaded
+                </text>
+                <text class="el" x="190" y="42" text-anchor="middle">
+                  all miss
+                </text>
+                <text class="nt bad" x="230" y="200" text-anchor="middle">
+                  every request rebuilds the same value at the same moment
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              A hot key expires, thousands of requests miss at once, and all of
+              them hit the database together.
+            </figcaption>
+          </figure>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              The shop's only bread tray empties, and every customer walks into
+              the bakery kitchen at the same moment to ask for more. The fix is
+              for one person to fetch a fresh tray while everyone else waits a
+              second, or takes yesterday's loaf.
+            </p>
+          </div>
+          <ul>
+            <li>
+              <b>Request coalescing ("single flight"):</b> only one request
+              rebuilds the value, and the rest wait for it.
+            </li>
+            <li>
+              <b>Stale-while-revalidate:</b> keep serving the old value while
+              one background refresh runs.
+            </li>
+            <li>
+              <b>TTL jitter:</b> add randomness to expiry times so keys don't
+              all expire at the same second.
+            </li>
+            <li>
+              <b>Early refresh:</b> refresh a hot key shortly <em>before</em> it
+              expires.
+            </li>
+          </ul>
+
+          <h3>Autoscaling, backpressure and graceful degradation</h3>
+          <ul>
+            <li>
+              <b>Autoscaling:</b> add or remove app servers automatically based
+              on CPU, request rate or queue length (for example Kubernetes HPA
+              or AWS Auto Scaling). Scale out early, scale in slowly.
+            </li>
+            <li>
+              <b>Backpressure and load shedding:</b> when overloaded, reject
+              quickly with <code>429</code> or <code>503</code> instead of
+              queueing forever. A fast "try again" beats a 30-second timeout.
+            </li>
+            <li>
+              <b>Graceful degradation:</b> decide in advance what to switch off
+              under stress. Drop recommendations, reviews or animations, but
+              keep search and checkout working.
+            </li>
+          </ul>
+
+          <h3>Releasing safely</h3>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Strategy</th>
+                  <th>How</th>
+                  <th>Rollback</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Rolling</td>
+                  <td>Replace servers a few at a time.</td>
+                  <td>Roll forward or back gradually.</td>
+                </tr>
+                <tr>
+                  <td>Blue-green</td>
+                  <td>
+                    Run the new version (green) alongside the old (blue), then
+                    switch the load balancer over in one step.
+                  </td>
+                  <td>Instant: switch back to blue.</td>
+                </tr>
+                <tr>
+                  <td>Canary</td>
+                  <td>
+                    Send 1–5% of traffic to the new version, watch error rates,
+                    then widen.
+                  </td>
+                  <td>Route the canary share back.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            A canary is the same idea as the Strangler pattern's traffic split
+            (lecture 4), applied to every release.
+          </p>
+
+          <h3>Observability: the three pillars</h3>
+          <ul>
+            <li>
+              <b>Metrics:</b> numbers over time (QPS, error rate, p99, CPU).
+              Prometheus and Grafana.
+            </li>
+            <li>
+              <b>Logs:</b> structured events per request, centralised (ELK,
+              Loki).
+            </li>
+            <li>
+              <b>Traces:</b> one request followed across services
+              (OpenTelemetry). See lecture 3's notes.
+            </li>
+          </ul>
+        </section>
+
         <section class="step" id="revise">
           <div class="snum">Check yourself</div>
           <h2>Revision questions</h2>

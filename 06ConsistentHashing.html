@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>CAP Theorem</title>
+    <title>Consistent Hashing</title>
     <style>
       :root {
         color-scheme: light;
@@ -796,6 +796,113 @@
         stroke: var(--line);
         stroke-width: 1.4;
       }
+      svg .ringc {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 10;
+        stroke-opacity: 0.28;
+      }
+      svg .tick {
+        stroke: var(--line);
+        stroke-width: 1.2;
+      }
+      svg .ringn {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg circle.n {
+        stroke-width: 1.6;
+      }
+
+      /* worked calculations */
+      .calc {
+        font-family: var(--mono);
+        font-size: 13.5px;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 16px 0;
+        overflow-x: auto;
+        line-height: 1.75;
+        font-variant-numeric: tabular-nums;
+      }
+      .calc .c {
+        color: var(--muted);
+      }
+      .calc b {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+      @media (max-width: 720px) {
+        .tiles {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .tile {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .tile b {
+        display: block;
+        font-family: var(--display);
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      .tile span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+      }
+
+      /* bit layout */
+      .bits {
+        display: flex;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1.5px solid var(--c-lb-s);
+        font-family: var(--mono);
+        font-size: 12px;
+        min-width: 520px;
+      }
+      .bits div {
+        padding: 10px 8px;
+        text-align: center;
+        border-left: 1px solid var(--c-lb-s);
+        background: var(--c-lb-f);
+      }
+      .bits div:first-child {
+        border-left: 0;
+        background: var(--sunk);
+      }
+      .bits b {
+        display: block;
+        font-family: var(--display);
+        font-size: 14px;
+      }
+      .code {
+        font-family: var(--mono);
+        font-size: 13px;
+        background: var(--sunk);
+        border-radius: 10px;
+        padding: 12px 14px;
+        overflow-x: auto;
+        white-space: pre;
+        line-height: 1.6;
+      }
 
       .side {
         display: flex;
@@ -934,99 +1041,25 @@
     </style>
   </head>
   <body>
-    <style>
-      .venn {
-        width: 100%;
-        max-width: 420px;
-        height: auto;
-        display: block;
-        margin: 0 auto;
-      }
-      .venn circle {
-        stroke-width: 1.8;
-      }
-      .venn .vc {
-        fill: var(--c-app-f);
-        stroke: var(--c-app-s);
-        fill-opacity: 0.75;
-      }
-      .venn .va {
-        fill: var(--c-db-f);
-        stroke: var(--c-db-s);
-        fill-opacity: 0.75;
-      }
-      .venn .vp {
-        fill: var(--c-mq-f);
-        stroke: var(--c-mq-s);
-        fill-opacity: 0.75;
-      }
-      .venn text {
-        font-family: var(--display);
-        font-weight: 800;
-        fill: var(--ink);
-      }
-      .venn .big {
-        font-size: 40px;
-      }
-      .venn .pair {
-        font-family: var(--mono);
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .venn .no {
-        font-family: var(--mono);
-        font-size: 12px;
-        font-weight: 600;
-        fill: var(--warn);
-      }
-      .venn .word {
-        font-family: var(--mono);
-        font-size: 12px;
-        font-weight: 400;
-        fill: var(--muted);
-      }
-    </style>
     <header class="hero">
       <div>
         <div class="eyebrow">
-          HLD lecture 2 · Concept &amp;&amp; Coding · study notes
+          HLD lecture 6 · Concept &amp;&amp; Coding · study notes
         </div>
-        <h1>CAP <span class="big">Theorem</span></h1>
+        <h1>Consistent <span class="big">Hashing</span></h1>
         <p class="intro">
-          When your data lives on several machines, you want three things: every
-          read is up to date, every node always answers, and the system survives
-          the network breaking. CAP says you can't have all three at once. This
-          lecture shows why with one small example, and which trade-off you
-          actually get to make.
+          Deciding which server should hold a piece of data is easy when the
+          number of servers never changes. In real systems servers are added and
+          removed all the time. Consistent hashing is the trick that keeps that
+          from forcing you to move almost all of your data.
         </p>
       </div>
       <div class="side">
-        <svg
-          class="venn"
-          viewBox="0 0 420 360"
-          role="img"
-          aria-label="Venn diagram of Consistency, Availability and Partition tolerance; pairs CA, CP, AP possible, all three not possible"
+        <span class="cap"
+          >Servers and keys on one ring · each key goes clockwise to the next
+          server</span
         >
-          <circle class="vc" cx="150" cy="130" r="105" />
-          <circle class="va" cx="270" cy="130" r="105" />
-          <circle class="vp" cx="210" cy="232" r="105" />
-          <text class="big" x="95" y="112" text-anchor="middle">C</text>
-          <text class="word" x="95" y="132" text-anchor="middle">
-            consistency
-          </text>
-          <text class="big" x="325" y="112" text-anchor="middle">A</text>
-          <text class="word" x="325" y="132" text-anchor="middle">
-            availability
-          </text>
-          <text class="big" x="210" y="300" text-anchor="middle">P</text>
-          <text class="word" x="210" y="320" text-anchor="middle">
-            partition tolerance
-          </text>
-          <text class="pair" x="210" y="92" text-anchor="middle">CA</text>
-          <text class="pair" x="150" y="210" text-anchor="middle">CP</text>
-          <text class="pair" x="270" y="210" text-anchor="middle">AP</text>
-          <text class="no" x="210" y="170" text-anchor="middle">CAP ✕</text>
-        </svg>
+        <div class="dg"><div class="dg" data-d="hero"></div></div>
       </div>
     </header>
 
@@ -1034,13 +1067,22 @@
       <span>Colour key:</span>
       <span
         ><i style="background: var(--c-app-f); border-color: var(--c-app-s)"></i
-        >Application A</span
+        >Server 1 and its keys</span
       >
       <span
         ><i style="background: var(--c-db-f); border-color: var(--c-db-s)"></i
-        >Database node</span
+        >Server 2 and its keys</span
       >
-      <span style="color: var(--warn)">orange ✕ = network link broken</span>
+      <span
+        ><i style="background: var(--c-lb-f); border-color: var(--c-lb-s)"></i
+        >Server 3 and its keys</span
+      >
+      <span
+        ><i
+          style="background: var(--c-cache-f); border-color: var(--c-cache-s)"
+        ></i
+        >Keys that had to move</span
+      >
     </div>
 
     <div class="wrap">
@@ -1048,25 +1090,25 @@
         <p class="head">In this lecture</p>
         <ol id="rail">
           <li>
-            <a href="#s1"><span>01</span>The setup</a>
+            <a href="#s1"><span>01</span>What hashing is</a>
           </li>
           <li>
-            <a href="#s2"><span>C</span>Consistency</a>
+            <a href="#s2"><span>02</span>Where it's used</a>
           </li>
           <li>
-            <a href="#s3"><span>A</span>Availability</a>
+            <a href="#s3"><span>03</span>The problem with mod N</a>
           </li>
           <li>
-            <a href="#s4"><span>P</span>Partition tolerance</a>
+            <a href="#s4"><span>04</span>The ring</a>
           </li>
           <li>
-            <a href="#s5"><span>05</span>Why not all three</a>
+            <a href="#s5"><span>05</span>Adding &amp; removing servers</a>
           </li>
           <li>
-            <a href="#s6"><span>06</span>CA, CP, AP</a>
+            <a href="#s6"><span>06</span>Uneven load</a>
           </li>
           <li>
-            <a href="#s7"><span>07</span>Real world: pick C or A</a>
+            <a href="#s7"><span>07</span>Virtual nodes</a>
           </li>
           <li>
             <a href="#extra"><span>+</span>Good to know</a>
@@ -1079,347 +1121,330 @@
 
       <main>
         <section class="step" id="s1">
-          <div class="snum">
-            Start here <span class="flag">asked directly in interviews</span>
-          </div>
-          <h2>The setup: a distributed system with replicated data</h2>
+          <div class="snum">Start here</div>
+          <h2>What is hashing?</h2>
           <p class="lede">
-            The lecture's one-line definition: CAP describes the
-            <b
-              >desirable properties of a distributed system with replicated
-              data</b
-            >. All three words in that phrase matter.
+            A <b>hash function</b> takes an input of <b>any length</b> and turns
+            it into a <b>fixed-size</b> number. The same input always gives the
+            same number.
           </p>
           <div class="eli5">
             <span class="tag">Picture it</span>
             <p>
-              Two shops of the same bakery chain, one in India and one in the
-              US, each with a copy of the same price list. Whenever head office
-              changes a price in one shop, that shop phones the other to update
-              its copy. Customers don't care which shop they call. They just
-              want the right price, and they want someone to pick up.
+              A school sorts students into houses by a rule: add up the letters
+              of your name and take the remainder when divided by 4. Anyone can
+              run the rule and always lands in the same house, so nobody needs a
+              list to look you up.
             </p>
           </div>
           <figure>
-            <div class="dg" data-d="setup"></div>
+            <div class="dg" data-d="hashfn"></div>
             <figcaption>
-              Application A queries the system. DB node B (India) and DB node C
-              (US) hold the same data and keep each other in sync.
+              The key "Shreyansh" goes into a hash function, which returns a
+              fixed-size number (here 20). Mod hashing then picks a slot: 20 mod
+              6 = 2.
             </figcaption>
           </figure>
-          <ul>
-            <li>
-              <b>Distributed:</b> the data is on more than one machine, here
-              node B in India and node C in the US.
-            </li>
-            <li>
-              <b>Replicated:</b> both nodes hold the same data. A write on B is
-              copied to C.
-            </li>
-            <li>
-              The user (application A) doesn't know or care which node answers.
-              To them it's one system.
-            </li>
-          </ul>
-          <h3>Why it's asked early</h3>
+          <h3>Mod hashing</h3>
           <p>
-            CAP decides trade-offs at the very start of a design. If you pick
-            the wrong side and discover it later, you may have to redesign the
-            whole system. So know which property you're willing to give up
-            before you draw anything.
+            To place a key in a table of fixed size N, take
+            <code>hash(key) mod N</code>. With a 6-slot table, a hash of 20 goes
+            to slot <code>20 mod 6 = 2</code>. This works perfectly
+            <b>as long as N never changes</b>. When N does change, it breaks.
           </p>
         </section>
 
         <section class="step" id="s2">
-          <div class="snum">The C</div>
-          <h2>Consistency</h2>
-          <p class="lede">
-            Every read, from any node, at any moment, returns the
-            <b>latest</b> written value.
-          </p>
+          <div class="snum">Where it shows up</div>
+          <h2>Two places systems use hashing to route data</h2>
+          <div class="two">
+            <div class="x">
+              <h4>1 · Load balancing app servers</h4>
+              <p>
+                The load balancer computes <code>hash(key) mod 3</code> to
+                decide which of 3 app servers gets a request. The same user
+                keeps landing on the same server.
+              </p>
+            </div>
+            <div class="x">
+              <h4>2 · Horizontal sharding of a DB</h4>
+              <p>
+                Rows are split across DB servers (for example names A–P on DB1,
+                Q–Z on DB2). A hash decides which shard stores each key. This is
+                where lecture 5 left off.
+              </p>
+            </div>
+          </div>
           <figure>
-            <div class="dg" data-d="cons"></div>
+            <div class="dg" data-d="modlb"></div>
             <figcaption>
-              B had a = 4. A writes a = 5 to B, B copies it to C, and a read
-              from C now returns 5.
+              With mod hashing, each key maps to one of three nodes.
             </figcaption>
           </figure>
-          <p>
-            The lecture's example: node B holds <code>a = 4</code>. Application
-            A writes <code>a = 5</code>. B saves it and replicates it to C, so C
-            changes from 4 to 5. Now whether A reads from B or C, it gets 5.
-            That's consistency.
-          </p>
         </section>
 
         <section class="step" id="s3">
-          <div class="snum">The A</div>
-          <h2>Availability</h2>
-          <p class="lede">
-            Every node <b>responds</b> to every request. The response can be a
-            success or a failure, but it must be a response, never silence or a
-            timeout.
-          </p>
-          <figure>
-            <div class="dg" data-d="avail"></div>
-            <figcaption>Both nodes answer whatever they're asked.</figcaption>
-          </figure>
-          <div class="eli5">
-            <span class="tag">Picture it</span>
-            <p>
-              Available means the shop always picks up the phone. It might say
-              "sorry, out of stock", which still counts. What doesn't count is
-              the phone ringing forever.
-            </p>
-          </div>
-          <div class="beyond">
-            <span class="tag">Beyond the lecture</span>
-            <p>
-              The formal definition says every request to a
-              <em>non-failing</em> node gets a non-error response. That response
-              is <b>not guaranteed to be the latest data</b>, and that's exactly
-              where it clashes with consistency.
-            </p>
-          </div>
-        </section>
-
-        <section class="step" id="s4">
           <div class="snum">
-            The P <span class="flag">the confusing one</span>
+            The problem
+            <span class="flag">★ why consistent hashing exists</span>
           </div>
-          <h2>Partition tolerance</h2>
+          <h2>Mod N breaks when servers change</h2>
           <p class="lede">
-            A <b>partition</b> is a break in communication between nodes: B and
-            C can no longer talk to each other. <b>Partition tolerance</b> means
-            that even when that happens, the <b>system stays up</b>, and A can
-            still send requests and get them handled.
+            Servers aren't fixed. Traffic grows, so you add one. A machine
+            crashes, so you lose one. The moment N changes,
+            <code>hash(key) mod N</code> gives a different answer for most keys,
+            so most of your data is now "on the wrong server".
           </p>
           <div class="eli5">
             <span class="tag">Picture it</span>
             <p>
-              The phone line between the India shop and the US shop is cut.
-              Partition tolerant means both shops stay open for customers
-              anyway. Not partition tolerant means the whole chain closes until
-              the line is fixed.
+              Split a class into 3 teams by roll number mod 3. A fourth team is
+              added, so now it's mod 4. Almost every child has to change teams,
+              not just enough to fill the new one.
             </p>
           </div>
-          <figure>
-            <div class="dg" data-d="part"></div>
-            <figcaption>
-              The B–C link is broken, but the system as a whole is still up and
-              A can still query it. The break is hidden from the user.
-            </figcaption>
-          </figure>
           <p>
-            The lecture's simple way to say it:
-            <b
-              >after the partition breaks, is the system still up, accepting and
-              fulfilling requests?</b
-            >
-            If yes, it's partition tolerant.
-          </p>
-        </section>
-
-        <section class="step" id="s5">
-          <div class="snum">The theorem</div>
-          <h2>Why you can't have all three</h2>
-          <p class="lede">
-            Possible: <b>CA</b>, <b>CP</b>, <b>AP</b>. Not possible: <b>CAP</b>.
-            Here's the example that proves it.
-          </p>
-          <figure>
-            <div class="dg" data-d="conflict"></div>
-            <figcaption>
-              The link breaks for 5 minutes. A writes a = 6 to B. C never hears
-              about it and still has a = 5.
-            </figcaption>
-          </figure>
-          <ol>
-            <li>B and C both hold <code>a = 5</code>.</li>
-            <li>
-              The B–C link breaks (a partition) for, say, 5 minutes. We want the
-              system to stay up (P).
-            </li>
-            <li>
-              A writes <code>a = 6</code>. It lands on B. B tries to replicate
-              to C, but the update can't get through.
-            </li>
-            <li>
-              Now A reads <code>a</code> from C. C has two choices:
-              <ul>
-                <li>
-                  <b>Answer 5.</b> It's available, but that's old data, so
-                  <b>consistency is lost</b>.
-                </li>
-                <li>
-                  <b>Refuse to answer until it's back in sync.</b> That keeps
-                  things consistent, but C isn't responding, so
-                  <b>availability is lost</b>.
-                </li>
-              </ul>
-            </li>
-          </ol>
-          <p>
-            There is no third option. During a partition you have to give up C
-            or A. So all three together is impossible.
-          </p>
-        </section>
-
-        <section class="step" id="s6">
-          <div class="snum">The three possible combos</div>
-          <h2>CA, CP and AP</h2>
-
-          <h3>CP: consistent + partition tolerant (give up availability)</h3>
-          <figure>
-            <div class="dg" data-d="cp"></div>
-            <figcaption>
-              During the partition, C is taken out of service. All requests go
-              to B, so every answer is a = 6.
-            </figcaption>
-          </figure>
-          <p>
-            When the link breaks, the lecture says to bring node C <b>down</b>,
-            so it stops accepting requests. All reads and writes go to B, and
-            everyone gets <code>a = 6</code>. The system is up (P ✓) and
-            consistent (C ✓), but C isn't responding, so availability is given
-            up (A ✗).
-          </p>
-
-          <h3>AP: available + partition tolerant (give up consistency)</h3>
-          <figure>
-            <div class="dg" data-d="ap"></div>
-            <figcaption>
-              Both nodes keep answering. A read from C returns the old a = 5
-              until the link heals.
-            </figcaption>
-          </figure>
-          <p>
-            Keep both nodes answering during the partition. B says 6, C says 5.
-            Both respond (A ✓) and the system is up (P ✓), but readers can get
-            different answers (C ✗). When the link comes back, C catches up.
-            This is called <b>eventual consistency</b>.
-          </p>
-
-          <h3>CA: consistent + available (give up partition tolerance)</h3>
-          <figure>
-            <div class="dg" data-d="ca"></div>
-            <figcaption>
-              To stay consistent and available, the system has to stop when the
-              link breaks.
-            </figcaption>
-          </figure>
-          <p>
-            You can only have both C and A if there's never a partition. The
-            lecture's example: the moment B and C lose contact, you
-            <b>stop the whole system</b> (A shouldn't query at all), so no one
-            ever sees inconsistent data. While the network is healthy you're
-            fully consistent and available, but you are
-            <b>not partition tolerant</b>. A 10-minute network blip means 10
-            minutes of downtime.
+            Example with made-up hash values. Going from 3 nodes to 4 nodes:
           </p>
           <div class="tw">
             <table>
               <thead>
                 <tr>
-                  <th>Choice</th>
-                  <th>During a partition…</th>
-                  <th>Gives up</th>
+                  <th>Key</th>
+                  <th>hash</th>
+                  <th>mod 3 → node</th>
+                  <th>mod 4 → node</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>CP</td>
-                  <td>
-                    Nodes that can't sync stop answering. Everyone who gets an
-                    answer gets the latest data.
-                  </td>
-                  <td><span class="pill no">Availability</span></td>
+                  <td>Shreyansh</td>
+                  <td class="mono">21</td>
+                  <td class="mono">0 → N1</td>
+                  <td class="mono">1 → N2</td>
+                  <td><span class="pill no">moved</span></td>
                 </tr>
                 <tr>
-                  <td>AP</td>
-                  <td>
-                    All nodes keep answering. Some answers may be stale until
-                    the link heals.
-                  </td>
-                  <td><span class="pill no">Consistency</span></td>
+                  <td>Rahul</td>
+                  <td class="mono">13</td>
+                  <td class="mono">1 → N2</td>
+                  <td class="mono">1 → N2</td>
+                  <td><span class="pill yes">stays</span></td>
                 </tr>
                 <tr>
-                  <td>CA</td>
-                  <td>The whole system stops.</td>
-                  <td><span class="pill no">Partition tolerance</span></td>
+                  <td>Shiva</td>
+                  <td class="mono">11</td>
+                  <td class="mono">2 → N3</td>
+                  <td class="mono">3 → N4</td>
+                  <td><span class="pill no">moved</span></td>
+                </tr>
+                <tr>
+                  <td>Aman</td>
+                  <td class="mono">12</td>
+                  <td class="mono">0 → N1</td>
+                  <td class="mono">0 → N1</td>
+                  <td><span class="pill yes">stays</span></td>
+                </tr>
+                <tr>
+                  <td>Neha</td>
+                  <td class="mono">22</td>
+                  <td class="mono">1 → N2</td>
+                  <td class="mono">2 → N3</td>
+                  <td><span class="pill no">moved</span></td>
+                </tr>
+                <tr>
+                  <td>Ravi</td>
+                  <td class="mono">17</td>
+                  <td class="mono">2 → N3</td>
+                  <td class="mono">1 → N2</td>
+                  <td><span class="pill no">moved</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <p>
+            4 of 6 keys moved. In a real system that means
+            <b>rebalancing millions of DB entries</b>: copying data between
+            servers, or cache misses everywhere, just because one server was
+            added. The same happens when a server is removed, since mod 3
+            becomes mod 2.
+          </p>
+          <p>
+            So normal mod hashing is a poor fit wherever the number of nodes is
+            <b>dynamic</b>: app servers that scale up and down or crash, and
+            database shards that get added as data grows.
+          </p>
+          <h3>The goal</h3>
+          <p>
+            When a node is added or removed, move
+            <b>as few keys as possible</b>. With consistent hashing, only about
+            <b>1/n of the keys</b> (n = number of nodes) need to move on
+            average, instead of almost all of them.
+          </p>
         </section>
 
-        <section class="step" id="s7">
-          <div class="snum">
-            What to say in the interview
-            <span class="flag">★ remember this</span>
-          </div>
-          <h2>In the real world, P is not optional</h2>
+        <section class="step" id="s4">
+          <div class="snum">How it works</div>
+          <h2>The hash ring</h2>
           <p class="lede">
-            Networks between machines and data centres <b>will</b> break
-            sometimes. Stopping the entire system every time that happens isn't
-            acceptable. So in a real distributed system you
-            <b>always keep P</b>, and the real choice is between <b>C and A</b>,
-            which means CP or AP.
+            Imagine the hash output space bent into a <b>circle</b>. The lecture
+            uses a ring of 12 positions, 0 to 11, that wraps back to 0. Both
+            <b>servers</b> and <b>keys</b> are hashed onto the same ring.
           </p>
           <div class="eli5">
             <span class="tag">Picture it</span>
             <p>
-              Phone lines between shops do go down. "Close every shop when the
-              line drops" isn't a real plan. The only real question is: while
-              the line is down, do shops refuse to sell (CP), or sell at
-              possibly outdated prices (AP)?
+              A circular running track with a few water stations. Every runner
+              jogs clockwise and drinks at the first station they reach. Add a
+              new station and only the runners just behind it change where they
+              drink. Everyone else carries on as before.
             </p>
           </div>
+          <figure>
+            <div class="dg" data-d="ring"></div>
+            <figcaption>
+              Three servers sit on the ring. Each key walks clockwise and is
+              stored on the first server it meets.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              Place each server on the ring with a hash, for example
+              <code>hash(S1) mod 12</code>. Here S1 lands at 3, S2 at 7 and S3
+              at 11.
+            </li>
+            <li>
+              Place each key the same way: <code>hash(key1) mod 12</code>.
+            </li>
+            <li>
+              From the key's position, <b>move clockwise</b>. The first server
+              you reach owns that key.
+            </li>
+          </ol>
           <p>
-            The line to use in an interview:
-            <b
-              >"We never trade off partition tolerance. We trade off between
-              consistency and availability, based on the use case."</b
-            >
+            Result: <b>S1 → K1, K2</b> · <b>S2 → K7, K5</b> ·
+            <b>S3 → K6, K3, K4</b>.
           </p>
-          <div class="two">
-            <div class="x">
-              <h4>Choose CP when wrong data is worse than no data</h4>
-              <ul>
-                <li>Bank balances, payments, wallet deductions</li>
-                <li>Booking the last seat or ticket</li>
-                <li>Inventory for flash sales</li>
-              </ul>
-            </div>
-            <div class="x">
-              <h4>Choose AP when a slightly old answer is fine</h4>
-              <ul>
-                <li>Social feeds, like counts, view counts</li>
-                <li>Product catalogue, recommendations</li>
-                <li>Chat "last seen", presence status</li>
-              </ul>
-            </div>
+          <p>
+            The key idea is that a key's server no longer depends on
+            <em>how many</em> servers exist. It only depends on which server
+            comes next on the ring.
+          </p>
+        </section>
+
+        <section class="step" id="s5">
+          <div class="snum">Why it wins</div>
+          <h2>Adding and removing servers</h2>
+          <h3>Adding a server</h3>
+          <figure>
+            <div class="dg" data-d="ringAdd"></div>
+            <figcaption>
+              S4 is added at position 5. Only K7, which sat between S1 and S4,
+              moves from S2 to S4. Every other key stays put.
+            </figcaption>
+          </figure>
+          <p>
+            Only the keys between the new server and the server before it
+            (counter-clockwise) move. Everything else stays where it was.
+          </p>
+          <h3>Removing a server</h3>
+          <figure>
+            <div class="dg" data-d="ringDel"></div>
+            <figcaption>
+              S1 is removed. Its keys K1 and K2 continue clockwise to the next
+              server, S2. No other key moves.
+            </figcaption>
+          </figure>
+          <p>
+            Only the keys that the removed server owned are moved, to the next
+            server clockwise. That's the "limited rebalancing" consistent
+            hashing promises: about 1/n of the keys.
+          </p>
+        </section>
+
+        <section class="step" id="s6">
+          <div class="snum">The catch</div>
+          <h2>Disadvantage: uneven load</h2>
+          <p class="lede">
+            The first diagram assumed servers land at equal distances around the
+            ring. Hashes are random, so servers can end up
+            <b>bunched together</b>. Then one server owns a huge arc of the ring
+            and gets most of the keys.
+          </p>
+          <figure>
+            <div class="dg" data-d="ringUneven"></div>
+            <figcaption>
+              S1, S2 and S3 land at positions 2, 3 and 4. Every key from 5 to 1,
+              walking clockwise, reaches S1 first, so S1 takes all seven keys.
+            </figcaption>
+          </figure>
+          <p>
+            The point of hashing across servers was to
+            <b>divide the load equally</b>, and here it fails completely.
+          </p>
+        </section>
+
+        <section class="step" id="s7">
+          <div class="snum">
+            The fix <span class="flag">★ always mention this</span>
           </div>
+          <h2>Virtual nodes (virtual objects)</h2>
+          <p class="lede">
+            Place each physical server on the ring at <b>several points</b>,
+            using several hash functions (or hashing <code>S1#1</code>,
+            <code>S1#2</code> and so on). Each point is a <b>virtual node</b>, a
+            replica marker for the same real server.
+          </p>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              Instead of one big water station per sponsor, each sponsor gets
+              several small stations scattered around the track. However the
+              runners are spread out, each sponsor ends up serving roughly the
+              same number.
+            </p>
+          </div>
+          <figure>
+            <div class="dg" data-d="ringVirtual"></div>
+            <figcaption>
+              Each server now appears twice. The same seven keys spread out as
+              S1 × 3, S2 × 2, S3 × 2.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              More points per server means a <b>more even</b> spread of keys.
+            </li>
+            <li>
+              When a server is removed, its keys scatter to <em>many</em> other
+              servers instead of all dumping onto one neighbour.
+            </li>
+            <li>
+              A stronger machine can be given more virtual nodes so it takes a
+              bigger share.
+            </li>
+          </ul>
           <div class="beyond">
             <span class="tag">Beyond the lecture</span>
             <ul>
               <li>
-                <b>Real databases:</b> MongoDB (default settings) and HBase lean
-                <b>CP</b>. Cassandra, DynamoDB and CouchDB lean <b>AP</b>. Many
-                let you tune this per query (for example Cassandra's consistency
-                levels, MongoDB's read and write concerns).
+                Real systems use hash spaces much bigger than 12, such as 0 to
+                2³²−1 or a 128-bit MD5 space, and often 100–200 virtual nodes
+                per server.
               </li>
               <li>
-                A single-node relational database (one PostgreSQL server) is
-                often called "CA". It's consistent and available, but only
-                because there's no network between nodes to partition.
+                Looking up "next server clockwise" is a binary search in a
+                sorted list of ring positions, so it takes O(log n).
               </li>
               <li>
-                <b>PACELC</b> extends CAP: if there's a <b>P</b>artition, choose
-                <b>A</b> or <b>C</b>; <b>E</b>lse (normal operation), choose
-                <b>L</b>atency or <b>C</b>onsistency. Even without failures,
-                waiting for every replica to confirm a write makes things
-                slower.
+                Used by Amazon Dynamo and DynamoDB (lecture 9), Apache
+                Cassandra, Discord's chat routing and many CDNs and caches.
+              </li>
+              <li>
+                Consistent hashing reduces movement but doesn't stop
+                <b>hot keys</b>. One very popular key still lives on one server.
+                Replication and caching handle that.
               </li>
             </ul>
           </div>
@@ -1484,155 +1509,109 @@
           </div>
           <h2>Good to know as an engineer</h2>
           <p class="lede">
-            CAP is the headline. These are the details engineers actually argue
-            about when choosing and running databases.
+            The ring isn't the only way to get "minimal movement". These
+            alternatives are simpler in some situations, and you'll see them in
+            real libraries.
           </p>
 
-          <h3>Consistency is a spectrum, not a switch</h3>
-          <div class="tw">
-            <table>
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Guarantee</th>
-                  <th>Example</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Linearizable (strong)</td>
-                  <td>
-                    Behaves like a single copy. Once a write finishes, every
-                    later read anywhere sees it.
-                  </td>
-                  <td>etcd, ZooKeeper, Spanner</td>
-                </tr>
-                <tr>
-                  <td>Sequential</td>
-                  <td>
-                    Everyone sees operations in the same order, though not
-                    necessarily in real time.
-                  </td>
-                  <td>Some replicated logs</td>
-                </tr>
-                <tr>
-                  <td>Causal</td>
-                  <td>
-                    If B depends on A (a reply to a comment), everyone sees A
-                    before B. Unrelated writes may appear in any order.
-                  </td>
-                  <td>Some geo-replicated stores (for example COPS)</td>
-                </tr>
-                <tr>
-                  <td>Read-your-writes</td>
-                  <td>
-                    You always see your own updates, even if others don't yet.
-                  </td>
-                  <td>Session guarantees</td>
-                </tr>
-                <tr>
-                  <td>Monotonic reads</td>
-                  <td>You never see data go backwards in time.</td>
-                  <td>Sticky reads to one replica</td>
-                </tr>
-                <tr>
-                  <td>Eventual</td>
-                  <td>If writes stop, all replicas converge eventually.</td>
-                  <td>DNS, Cassandra (default levels)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p>
-            Strongest at the top, weakest at the bottom. Each step down is
-            cheaper and more available. Many products let you pick per request.
-          </p>
-
-          <h3>CAP's C is not ACID's C</h3>
-          <ul>
-            <li>
-              <b>CAP consistency</b> = all replicas agree, so a read returns the
-              latest write (linearizability).
-            </li>
-            <li>
-              <b>ACID consistency</b> = a transaction leaves the database
-              obeying its rules (constraints, foreign keys, balance ≥ 0).
-            </li>
-          </ul>
-          <p>
-            Same word, different ideas. Mixing them up is a classic interview
-            trap.
-          </p>
-
-          <h3>How CP systems stay consistent: consensus</h3>
+          <h3>Rendezvous hashing (highest random weight)</h3>
           <div class="eli5">
             <span class="tag">Picture it</span>
             <p>
-              A committee only acts when a majority votes yes. If the room
-              splits into two groups, only the bigger group can reach a
-              majority, so the two halves can never make conflicting decisions.
+              Every key holds a quick lottery among all servers. Each server
+              gets a score from <code>hash(key + server)</code>, and the highest
+              score wins the key. Remove a server and only the keys it had won
+              hold a new lottery. Everyone else's winner is unchanged.
             </p>
           </div>
           <ul>
             <li>
-              <b>Raft</b> and <b>Paxos</b> are the standard algorithms. The
-              nodes elect a <b>leader</b>, and a write is committed once a
-              <b>majority</b> (a quorum) has stored it.
+              No ring and no virtual nodes. Load spreads evenly by construction.
             </li>
             <li>
-              With <b>2f + 1</b> nodes you survive <b>f</b> failures: 3 nodes
-              survive 1, and 5 survive 2. That's why clusters are odd-sized.
+              Cost: each lookup scores <b>every</b> server, which is O(n).
+              That's fine for tens of servers, slow for thousands.
+            </li>
+            <li>Easy to extend: take the top-k scores to pick k replicas.</li>
+          </ul>
+
+          <h3>Jump consistent hash</h3>
+          <ul>
+            <li>
+              A tiny algorithm (published by Google engineers in 2014) that maps
+              a key to one of n <b>numbered buckets</b> using no memory and
+              about ln(n) steps.
             </li>
             <li>
-              This prevents <b>split-brain</b>, where two halves of a
-              partitioned cluster each think they're in charge and accept
-              conflicting writes.
-            </li>
-            <li>
-              You rarely implement it yourself. You use it through etcd
-              (Kubernetes), ZooKeeper, Consul, or Kafka's KRaft.
+              It moves the minimum number of keys when n grows. The catch is
+              that buckets can only be added or removed
+              <b>at the end</b> (0…n−1), so it suits storage shards, not servers
+              that fail at random.
             </li>
           </ul>
 
-          <h3>Availability in "nines"</h3>
+          <h3>Consistent hashing with bounded loads</h3>
+          <ul>
+            <li>
+              Even with virtual nodes, one very hot key or unlucky placement can
+              overload a server.
+            </li>
+            <li>
+              This variant gives every server a <b>capacity cap</b>, for example
+              1.25 × the average load. If a key's server is full, the key
+              continues clockwise to the next server with room.
+            </li>
+            <li>
+              It's used in load balancers (it was added to HAProxy, and Vimeo
+              and Google have written about it) to keep cache locality while
+              preventing hotspots.
+            </li>
+          </ul>
+
           <div class="tw">
             <table>
               <thead>
                 <tr>
-                  <th>Availability</th>
-                  <th>Downtime per year</th>
-                  <th>Per month</th>
+                  <th>Method</th>
+                  <th>Lookup cost</th>
+                  <th>Balance</th>
+                  <th>Best for</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>99% (two nines)</td>
-                  <td class="mono">3.65 days</td>
-                  <td class="mono">~7.3 hours</td>
+                  <td>Mod N</td>
+                  <td class="mono">O(1)</td>
+                  <td>Even</td>
+                  <td>A fixed number of nodes only</td>
                 </tr>
                 <tr>
-                  <td>99.9%</td>
-                  <td class="mono">8.76 hours</td>
-                  <td class="mono">~43.8 min</td>
+                  <td>Ring + virtual nodes</td>
+                  <td class="mono">O(log n)</td>
+                  <td>Good with many vnodes</td>
+                  <td>Dynamic clusters (Dynamo, Cassandra)</td>
                 </tr>
                 <tr>
-                  <td>99.99%</td>
-                  <td class="mono">52.6 min</td>
-                  <td class="mono">~4.4 min</td>
+                  <td>Rendezvous</td>
+                  <td class="mono">O(n)</td>
+                  <td>Very even</td>
+                  <td>Small clusters, choosing replicas</td>
                 </tr>
                 <tr>
-                  <td>99.999%</td>
-                  <td class="mono">5.26 min</td>
-                  <td class="mono">~26 s</td>
+                  <td>Jump hash</td>
+                  <td class="mono">O(log n)</td>
+                  <td>Very even</td>
+                  <td>Numbered shards that only grow or shrink at the end</td>
+                </tr>
+                <tr>
+                  <td>Bounded loads</td>
+                  <td class="mono">O(log n)</td>
+                  <td>Capped</td>
+                  <td>Load balancers with hot keys</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p>
-            Availabilities <b>multiply</b> when dependencies are in series.
-            Three services at 99.9% each give roughly 99.7% for the whole
-            request. Every hop you add costs a little availability.
-          </p>
         </section>
 
         <section class="step" id="revise">
@@ -1640,62 +1619,54 @@
           <h2>Revision questions</h2>
           <p class="lede">Try answering out loud before opening each one.</p>
           <details>
-            <summary>Define the CAP theorem in one line.</summary>
+            <summary>What does a hash function do?</summary>
             <p>
-              For a distributed system with replicated data, you can guarantee
-              at most two of consistency, availability and partition tolerance
-              at the same time.
-            </p>
-          </details>
-          <details>
-            <summary>What does availability mean in CAP?</summary>
-            <p>
-              Every node responds to every request, with success or failure,
-              never silence. The response isn't guaranteed to be the latest
-              data.
-            </p>
-          </details>
-          <details>
-            <summary>What is partition tolerance, in simple words?</summary>
-            <p>
-              If communication between nodes breaks, the system stays up and
-              keeps accepting and fulfilling requests.
-            </p>
-          </details>
-          <details>
-            <summary>Walk through why CAP (all three) is impossible.</summary>
-            <p>
-              The link between B and C breaks and a write goes to B. C now has
-              old data. If C answers, it's inconsistent. If C refuses, it's
-              unavailable. It can't do both.
-            </p>
-          </details>
-          <details>
-            <summary>How does a CP system behave during a partition?</summary>
-            <p>
-              Nodes that can't stay in sync stop serving requests (in the
-              lecture, node C is taken down). Answers from the remaining nodes
-              are consistent.
+              It turns an input of any length into a fixed-size value. The same
+              input always produces the same output.
             </p>
           </details>
           <details>
             <summary>
-              Why is CA not a realistic choice for distributed systems?
+              Why does <code>hash(key) mod N</code> fail when servers change?
             </summary>
             <p>
-              It means shutting the whole system down whenever the network
-              between nodes breaks, and network breaks are common. So P is
-              always kept, and you choose between C and A.
+              Changing N changes the result for most keys, so most data suddenly
+              maps to a different server. That forces huge rebalancing, possibly
+              millions of DB entries moving.
+            </p>
+          </details>
+          <details>
+            <summary>Two use cases where the node count is dynamic?</summary>
+            <p>
+              Load balancing across app servers, which scale up and down or
+              crash, and horizontal sharding of databases, which get more shards
+              as data grows.
+            </p>
+          </details>
+          <details>
+            <summary>How does a key find its server on the ring?</summary>
+            <p>
+              Hash the key onto the ring and move clockwise. The first server
+              you reach owns the key.
             </p>
           </details>
           <details>
             <summary>
-              CP or AP for a payment wallet? For an Instagram like-count?
+              How many keys move when a node is added or removed?
             </summary>
             <p>
-              Wallet: CP, because a wrong balance is unacceptable. Like-count:
-              AP, because a slightly stale number is fine and the page must
-              always load.
+              Only the keys in the affected arc, about 1/n of all keys on
+              average (n = number of nodes).
+            </p>
+          </details>
+          <details>
+            <summary>
+              What's the disadvantage of basic consistent hashing, and the fix?
+            </summary>
+            <p>
+              Servers can land close together, so one server owns a big arc and
+              gets most keys. The fix is virtual nodes: place each server at
+              several points on the ring so load spreads evenly.
             </p>
           </details>
 
@@ -1703,41 +1674,25 @@
           <ul class="sources">
             <li>
               <a
-                href="https://www.mongodb.com/resources/basics/databases/cap-theorem"
+                href="https://www.cs.cornell.edu/courses/cs5414/2017fa/papers/dynamo.pdf"
                 target="_blank"
                 rel="noopener"
-                >MongoDB: Mastering the CAP theorem</a
+                >Dynamo: Amazon's Highly Available Key-value Store (paper)</a
               >
             </li>
             <li>
               <a
-                href="https://www.scylladb.com/glossary/cap-theorem/"
+                href="https://bytebytego.com/courses/system-design-interview/scale-from-zero-to-millions-of-users"
                 target="_blank"
                 rel="noopener"
-                >ScyllaDB: What is the CAP theorem?</a
-              >
-            </li>
-            <li>
-              <a
-                href="https://www.instaclustr.com/blog/cassandra-vs-mongodb/"
-                target="_blank"
-                rel="noopener"
-                >Instaclustr: Cassandra vs MongoDB using CAP</a
-              >
-            </li>
-            <li>
-              <a
-                href="https://luminousmen.com/post/cap-and-pacelc-theorems-in-plain-english/"
-                target="_blank"
-                rel="noopener"
-                >CAP and PACELC in plain English</a
+                >ByteByteGo: System Design Interview</a
               >
             </li>
           </ul>
           <p class="foot">
-            Built from the lecture's audio transcript and whiteboard frames (19
-            min). Sections marked "Beyond the lecture" come from outside the
-            video.
+            Built from the lecture's audio transcript and whiteboard frames (32
+            min). The mod-3 vs mod-4 table uses illustrative hash values.
+            Sections marked "Beyond the lecture" come from outside the video.
           </p>
         </section>
       </main>
@@ -1745,222 +1700,299 @@
 
     <script>
       (function () {
-        function base(o) {
-          // shared layout: application A on top, DB node B (India) bottom-left, DB node C (US) bottom-right
-          var h = o.h || 270;
-          var n = [
-            {
-              t: "app",
-              x: 235,
-              y: 14,
-              w: 170,
-              h: 52,
-              l: "Application A",
-              s: o.as || "reads & writes",
-            },
-            {
-              t: "db",
-              x: 70,
-              y: 170,
-              w: 160,
-              h: 72,
-              l: "DB node B",
-              s: o.bs || "India",
-              down: o.bdown,
-            },
-            {
-              t: "db",
-              x: 410,
-              y: 170,
-              w: 160,
-              h: 72,
-              l: "DB node C",
-              s: o.cs || "US",
-              down: o.cdown,
-            },
-          ];
-          if (o.zone) n.unshift(o.zone);
-          var e = [
-            Object.assign(
-              {
-                p: [
-                  [280, 66],
-                  [160, 170],
-                ],
-              },
-              o.ab || {},
-            ),
-            Object.assign(
-              {
-                p: [
-                  [360, 66],
-                  [480, 170],
-                ],
-              },
-              o.ac || {},
-            ),
-            Object.assign(
-              {
-                p: [
-                  [230, 212],
-                  [410, 212],
-                ],
-                both: 1,
-                dash: 1,
-              },
-              o.bc || {},
-            ),
-          ];
-          return { h: h, alt: o.alt, n: n, e: e, notes: o.notes || [] };
+        var CX = 320,
+          CY = 180,
+          R = 120;
+        function P(pos, r) {
+          var a = ((-90 + pos * 30) * Math.PI) / 180;
+          return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
         }
-        var cut = { noarrow: 1, bad: 1, both: 0, cut: [320, 212] };
+        // servers: [label, ringPos, colour, down?]; keys: [label, ringPos, colour]
+        function ring(servers, keys, extraNotes, alt) {
+          var n = [{ t: "ring", cx: CX, cy: CY, r: R, ticks: 12, nums: 1 }];
+          servers.forEach(function (s) {
+            var p = P(s[1], R);
+            n.push({
+              t: "app",
+              c: s[2],
+              x: p[0] - 22,
+              y: p[1] - 13,
+              w: 44,
+              h: 26,
+              l: s[0],
+              down: s[3],
+            });
+          });
+          keys.forEach(function (k) {
+            var p = P(k[1], R + 36);
+            n.push({
+              t: "circle",
+              c: k[2],
+              x: p[0] - 15,
+              y: p[1] - 15,
+              w: 30,
+              h: 30,
+              l: k[0],
+            });
+          });
+          return { h: 360, alt: alt, n: n, notes: extraNotes || [] };
+        }
+        var s1 = "app",
+          s2 = "db",
+          s3 = "lb",
+          s4 = "cdn",
+          mv = "cache";
+        var base = [
+          ["S1", 3, s1],
+          ["S2", 7, s2],
+          ["S3", 11, s3],
+        ];
+        var baseKeys = [
+          ["K1", 0.5, s1],
+          ["K2", 2.5, s1],
+          ["K7", 4.5, s2],
+          ["K5", 6, s2],
+          ["K6", 8.5, s3],
+          ["K3", 9.5, s3],
+          ["K4", 10.5, s3],
+        ];
+        var cw = [{ x: CX, y: CY + 4, l: "clockwise ↻", a: "middle" }];
+
         window.DIAGRAMS = {
-          setup: base({
-            alt: "Application A with two replicated DB nodes",
-            bc: { l: "replication", at: [320, 204] },
-          }),
-          cons: base({
-            alt: "Write a=5 to B, replicated to C, read from C returns 5",
-            bs: "a = 4 → 5",
-            cs: "a = 5 (copied)",
-            ab: { l: "① write a = 5", at: [214, 110], a: "end" },
-            ac: { both: 1, l: "③ read a → 5 ✓", at: [430, 110], a: "start" },
-            bc: {
-              good: 1,
-              dash: 0,
-              both: 0,
-              l: "② copy a = 5",
-              at: [320, 204],
-            },
-          }),
-          avail: base({
-            alt: "Both nodes respond to requests",
-            ab: { both: 1, l: "success / failure", at: [214, 110], a: "end" },
-            ac: { both: 1, l: "success / failure", at: [430, 110], a: "start" },
+          hero: ring(
+            base,
+            baseKeys,
+            cw,
+            "Hash ring with three servers and seven keys",
+          ),
+          hashfn: {
+            h: 170,
+            alt: "Key Shreyansh goes through a hash function and becomes the number 20",
+            n: [
+              {
+                t: "client",
+                x: 20,
+                y: 50,
+                w: 170,
+                h: 60,
+                l: "Key",
+                s: '"Shreyansh" · any length',
+              },
+              {
+                t: "lb",
+                x: 245,
+                y: 40,
+                w: 150,
+                h: 80,
+                l: "Hash function",
+                s: "f(key)",
+              },
+              {
+                t: "app",
+                x: 450,
+                y: 50,
+                w: 170,
+                h: 60,
+                l: "Hash = 20",
+                s: "fixed-size number",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [190, 80],
+                  [245, 80],
+                ],
+              },
+              {
+                p: [
+                  [395, 80],
+                  [450, 80],
+                ],
+              },
+            ],
             notes: [
               {
                 x: 320,
-                y: 266,
-                l: "every node answers · no silence, no timeouts",
+                y: 156,
+                l: "mod hashing: 20 mod 6 = 2 → slot 2 of a 6-slot table",
                 a: "middle",
               },
             ],
-          }),
-          part: base({
-            alt: "B–C link broken, system still up",
-            h: 290,
-            zone: {
-              t: "zone",
-              x: 40,
-              y: 146,
-              w: 560,
-              h: 120,
-              l: "SYSTEM STILL UP",
-            },
-            ab: { both: 1 },
-            ac: { both: 1 },
-            bc: cut,
-            notes: [
-              { x: 320, y: 240, l: "B and C can’t talk", a: "middle", bad: 1 },
+          },
+
+          modlb: {
+            h: 250,
+            alt: "Load balancer uses hash(key) mod 3 to pick one of three nodes",
+            n: [
               {
-                x: 320,
-                y: 284,
-                l: "A doesn’t notice · requests still handled",
-                a: "middle",
+                t: "lb",
+                x: 170,
+                y: 14,
+                w: 300,
+                h: 56,
+                l: "Load balancer",
+                s: "node = hash(key) mod 3",
+              },
+              {
+                t: "app",
+                x: 30,
+                y: 170,
+                w: 160,
+                h: 56,
+                l: "Node 1",
+                s: "Shreyansh",
+              },
+              {
+                t: "app",
+                c: "db",
+                x: 240,
+                y: 170,
+                w: 160,
+                h: 56,
+                l: "Node 2",
+                s: "Rahul",
+              },
+              {
+                t: "app",
+                c: "lb",
+                x: 450,
+                y: 170,
+                w: 160,
+                h: 56,
+                l: "Node 3",
+                s: "Shiva",
               },
             ],
-          }),
-          conflict: base({
-            alt: "During partition, write a=6 on B cannot reach C, which still has a=5",
-            h: 290,
-            bs: "a = 6 (new write)",
-            cs: "a = 5 (stale!)",
-            ab: { l: "write a = 6", at: [214, 110], a: "end" },
-            ac: { l: "read a → ?", at: [430, 110], a: "start" },
-            bc: Object.assign(
-              { l: "update can’t get through", at: [320, 236] },
-              cut,
-            ),
-            notes: [
+            e: [
               {
-                x: 320,
-                y: 282,
-                l: "C must choose: answer 5 (lose C) or refuse (lose A)",
+                p: [
+                  [260, 70],
+                  [110, 170],
+                ],
+              },
+              {
+                p: [
+                  [320, 70],
+                  [320, 170],
+                ],
+              },
+              {
+                p: [
+                  [380, 70],
+                  [530, 170],
+                ],
+              },
+            ],
+          },
+
+          ring: ring(
+            base,
+            baseKeys,
+            cw,
+            "Three servers at positions 3, 7 and 11; keys map clockwise",
+          ),
+          ringAdd: ring(
+            base.concat([["S4", 5, s4]]),
+            [
+              ["K1", 0.5, s1],
+              ["K2", 2.5, s1],
+              ["K7", 4.5, mv],
+              ["K5", 6, s2],
+              ["K6", 8.5, s3],
+              ["K3", 9.5, s3],
+              ["K4", 10.5, s3],
+            ],
+            [
+              { x: CX, y: CY - 6, l: "S4 added at 5", a: "middle", strong: 1 },
+              { x: CX, y: CY + 12, l: "only K7 moves", a: "middle", bad: 1 },
+            ],
+            "Server S4 added at position 5; only K7 moves",
+          ),
+          ringDel: ring(
+            [
+              ["S1", 3, s1, 1],
+              ["S2", 7, s2],
+              ["S3", 11, s3],
+            ],
+            [
+              ["K1", 0.5, mv],
+              ["K2", 2.5, mv],
+              ["K7", 4.5, s2],
+              ["K5", 6, s2],
+              ["K6", 8.5, s3],
+              ["K3", 9.5, s3],
+              ["K4", 10.5, s3],
+            ],
+            [
+              { x: CX, y: CY - 6, l: "S1 removed", a: "middle", strong: 1 },
+              { x: CX, y: CY + 12, l: "K1, K2 → S2", a: "middle", bad: 1 },
+            ],
+            "Server S1 removed; its keys K1 and K2 move to S2",
+          ),
+          ringUneven: ring(
+            [
+              ["S1", 2, s1],
+              ["S2", 3, s2],
+              ["S3", 4, s3],
+            ],
+            [
+              ["K7", 5, s1],
+              ["K1", 7.5, s1],
+              ["K2", 9, s1],
+              ["K3", 10.5, s1],
+              ["K4", 11.5, s1],
+              ["K5", 0.5, s1],
+              ["K6", 1.5, s1],
+            ],
+            [
+              {
+                x: CX,
+                y: CY - 6,
+                l: "servers bunched",
                 a: "middle",
                 strong: 1,
               },
-            ],
-          }),
-          cp: base({
-            alt: "CP: node C taken down during partition, B serves consistent data",
-            h: 290,
-            bs: "a = 6 · serves everything",
-            cs: "refuses requests",
-            cdown: 1,
-            ab: {
-              both: 1,
-              good: 1,
-              l: "all reads & writes → 6",
-              at: [214, 110],
-              a: "end",
-            },
-            ac: { noarrow: 1, bad: 1, dash: 1, cut: [420, 118] },
-            bc: cut,
-            notes: [
               {
-                x: 320,
-                y: 282,
-                l: "C ✓  P ✓  A ✗ (node C isn’t answering)",
+                x: CX,
+                y: CY + 12,
+                l: "S1 gets all 7 keys",
+                a: "middle",
+                bad: 1,
+              },
+            ],
+            "Servers bunched at 2, 3, 4; S1 gets every key",
+          ),
+          ringVirtual: ring(
+            [
+              ["S1", 2, s1],
+              ["S1", 8, s1],
+              ["S2", 3, s2],
+              ["S2", 11, s2],
+              ["S3", 0, s3],
+              ["S3", 6, s3],
+            ],
+            [
+              ["K7", 5, s3],
+              ["K1", 7.5, s1],
+              ["K2", 9, s2],
+              ["K3", 10.5, s2],
+              ["K4", 11.5, s3],
+              ["K5", 0.5, s1],
+              ["K6", 1.5, s1],
+            ],
+            [
+              {
+                x: CX,
+                y: CY - 6,
+                l: "2 points per server",
                 a: "middle",
                 strong: 1,
               },
+              { x: CX, y: CY + 12, l: "S1 ×3 · S2 ×2 · S3 ×2", a: "middle" },
             ],
-          }),
-          ap: base({
-            alt: "AP: both nodes answer, C returns stale data",
-            h: 290,
-            bs: "a = 6",
-            cs: "a = 5 (old)",
-            ab: { both: 1, l: "read → 6", at: [214, 110], a: "end" },
-            ac: { both: 1, l: "read → 5 (stale)", at: [430, 110], a: "start" },
-            bc: cut,
-            notes: [
-              {
-                x: 320,
-                y: 282,
-                l: "A ✓  P ✓  C ✗ · C catches up when the link heals",
-                a: "middle",
-                strong: 1,
-              },
-            ],
-          }),
-          ca: base({
-            alt: "CA: when the link breaks, the whole system stops",
-            h: 290,
-            zone: {
-              t: "zone",
-              x: 40,
-              y: 146,
-              w: 560,
-              h: 120,
-              l: "LINK BROKE → WHOLE SYSTEM STOPPED",
-              bad: 1,
-            },
-            bdown: 1,
-            cdown: 1,
-            ab: { noarrow: 1, bad: 1, dash: 1, cut: [220, 118] },
-            ac: { noarrow: 1, bad: 1, dash: 1, cut: [420, 118] },
-            bc: cut,
-            notes: [
-              {
-                x: 320,
-                y: 284,
-                l: "C ✓  A ✓ only while the network is healthy · P ✗",
-                a: "middle",
-                strong: 1,
-              },
-            ],
-          }),
+            "Each server at two ring positions; keys spread evenly",
+          ),
         };
       })();
     </script>
@@ -2044,6 +2076,51 @@
               (n.y + n.h) +
               '"/>'
             );
+          }
+          if (n.t === "ring") {
+            // hash ring: centre (cx,cy), radius r, optional tick count + position numbers
+            var s =
+              '<circle class="ringc" cx="' +
+              n.cx +
+              '" cy="' +
+              n.cy +
+              '" r="' +
+              n.r +
+              '"/>';
+            for (var i = 0; i < (n.ticks || 0); i++) {
+              var a = ((-90 + (i * 360) / n.ticks) * Math.PI) / 180,
+                c = Math.cos(a),
+                si = Math.sin(a);
+              s +=
+                '<line class="tick" x1="' +
+                (n.cx + (n.r - 5) * c) +
+                '" y1="' +
+                (n.cy + (n.r - 5) * si) +
+                '" x2="' +
+                (n.cx + (n.r + 5) * c) +
+                '" y2="' +
+                (n.cy + (n.r + 5) * si) +
+                '"/>';
+              if (n.nums)
+                s +=
+                  '<text class="ringn" x="' +
+                  (n.cx + (n.r - 30) * c) +
+                  '" y="' +
+                  (n.cy + (n.r - 30) * si + 4) +
+                  '" text-anchor="middle">' +
+                  i +
+                  "</text>";
+            }
+            if (n.l)
+              s +=
+                '<text class="nt" x="' +
+                n.cx +
+                '" y="' +
+                (n.cy + 4) +
+                '" text-anchor="middle">' +
+                esc(n.l) +
+                "</text>";
+            return s;
           }
           var ty = n.y + n.h / 2;
           if (n.t === "db") {
@@ -2167,7 +2244,8 @@
             mbad +
             '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahb" d="M0,0 L10,5 L0,10 z"/></marker></defs>';
           d.n.forEach(function (n) {
-            if (n.t === "zone" || n.t === "line") o += node(n);
+            if (n.t === "zone" || n.t === "line" || n.t === "ring")
+              o += node(n);
           });
           (d.e || []).forEach(function (e) {
             var pts = e.p
@@ -2199,7 +2277,8 @@
             }
           });
           d.n.forEach(function (n) {
-            if (n.t !== "zone" && n.t !== "line") o += node(n);
+            if (n.t !== "zone" && n.t !== "line" && n.t !== "ring")
+              o += node(n);
           });
           (d.e || []).forEach(function (e) {
             if (e.l)

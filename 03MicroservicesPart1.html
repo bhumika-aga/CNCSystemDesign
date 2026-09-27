@@ -1007,6 +1007,9 @@
             <a href="#s8"><span>08</span>By subdomain (DDD)</a>
           </li>
           <li>
+            <a href="#extra"><span>+</span>Good to know</a>
+          </li>
+          <li>
             <a href="#revise"><span>?</span>Revision</a>
           </li>
         </ol>
@@ -1410,6 +1413,169 @@
             Refactoring an existing monolith (Strangler pattern) and handling
             data across services (SAGA, CQRS) come in part 2.
           </div>
+        </section>
+
+        <style>
+          .wf {
+            display: grid;
+            gap: 6px;
+            min-width: 520px;
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 6px 4px;
+          }
+          .wr {
+            display: grid;
+            grid-template-columns: 120px 1fr 150px;
+            align-items: center;
+            gap: 10px;
+          }
+          .wr i {
+            display: block;
+            height: 14px;
+            border-radius: 4px;
+            background: var(--c-app-s);
+            opacity: 0.8;
+          }
+          .wr i.slow {
+            background: var(--warn);
+            opacity: 1;
+          }
+          .wr em {
+            font-style: normal;
+            color: var(--muted);
+          }
+          .bloom {
+            display: flex;
+            gap: 4px;
+            font-family: var(--mono);
+            font-size: 13px;
+            padding: 6px 4px;
+            min-width: 420px;
+          }
+          .bloom span {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 6px;
+            background: var(--sunk);
+            color: var(--muted);
+          }
+          .bloom span.on {
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 600;
+          }
+        </style>
+        <section class="step" id="extra">
+          <div class="snum">
+            Beyond the course
+            <span class="flag">good to know as an engineer</span>
+          </div>
+          <h2>Good to know as an engineer</h2>
+          <p class="lede">
+            Splitting into services is the easy part. These ideas decide whether
+            microservices actually help your team.
+          </p>
+
+          <h3>Conway's law</h3>
+          <p>
+            "Organisations design systems that mirror their own communication
+            structure." Four teams tend to produce four services. In practice,
+            draw service boundaries along <b>team</b> boundaries: one team owns
+            one service end to end, including its database, deployment and
+            on-call.
+          </p>
+
+          <h3>The distributed monolith (the anti-pattern to avoid)</h3>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              You split a house into separate flats, but every flat still shares
+              one boiler and one fuse box. Now you have the rent of many flats
+              and the single point of failure of one house.
+            </p>
+          </div>
+          <p>
+            Warning signs: services that must be <b>deployed together</b>,
+            services that share a database, or one request that needs a long
+            chain of synchronous calls to succeed. You pay the network and
+            operations cost of microservices with none of the independence.
+          </p>
+
+          <h3>How services find each other: service discovery</h3>
+          <ul>
+            <li>
+              Instances come and go (autoscaling, crashes), so their IPs change.
+              A <b>service registry</b> tracks where each service is currently
+              running.
+            </li>
+            <li>
+              Common implementations: Kubernetes Services and DNS, Consul,
+              Eureka.
+            </li>
+            <li>
+              <b>Client-side discovery:</b> the caller asks the registry and
+              picks an instance itself. <b>Server-side:</b> the caller hits a
+              load balancer that does the lookup.
+            </li>
+          </ul>
+
+          <h3>API gateway and Backend-for-Frontend (BFF)</h3>
+          <ul>
+            <li>
+              <b>API gateway:</b> one front door for all clients. It handles
+              routing, authentication, rate limiting and TLS termination, so
+              every service doesn't reimplement them.
+            </li>
+            <li>
+              <b>BFF:</b> a separate small gateway per client type (web, iOS,
+              Android), each shaping responses for its screen. It stops one
+              client's needs from bloating everyone's API.
+            </li>
+          </ul>
+
+          <h3>Finding the culprit: distributed tracing</h3>
+          <p>
+            This is the practical fix for the S1 → S2 → S3 debugging problem in
+            this lecture. Each request gets a <b>trace ID</b> that every service
+            passes along in a header (the W3C <code>traceparent</code> header).
+            Each service records a <b>span</b>: its own start and end times. A
+            tracing tool stitches them into a waterfall.
+          </p>
+          <figure>
+            <div class="tw">
+              <div class="wf">
+                <div class="wr">
+                  <span>S1 · order</span
+                  ><i style="margin-left: 0; width: 100%"></i><em>480 ms</em>
+                </div>
+                <div class="wr">
+                  <span>S2 · inventory</span
+                  ><i style="margin-left: 6%; width: 88%"></i><em>420 ms</em>
+                </div>
+                <div class="wr">
+                  <span>S3 · pricing</span
+                  ><i class="slow" style="margin-left: 10%; width: 78%"></i
+                  ><em>375 ms ← culprit</em>
+                </div>
+                <div class="wr">
+                  <span>DB query</span
+                  ><i style="margin-left: 12%; width: 6%"></i><em>30 ms</em>
+                </div>
+              </div>
+            </div>
+            <figcaption>
+              One trace across three services. It's obvious at a glance that
+              S3's own work is where the time goes. Example timings.
+            </figcaption>
+          </figure>
+          <p>
+            Tools: <b>OpenTelemetry</b> (the standard for instrumenting), with
+            Jaeger, Zipkin, Datadog or Honeycomb to view traces. Also add the
+            trace ID to every log line, a <b>correlation ID</b>, so you can grep
+            one request across all services.
+          </p>
         </section>
 
         <section class="step" id="revise">

@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <title>CAP Theorem</title>
+    <title>URL Shortener Design</title>
     <style>
       :root {
         color-scheme: light;
@@ -796,6 +796,113 @@
         stroke: var(--line);
         stroke-width: 1.4;
       }
+      svg .ringc {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 10;
+        stroke-opacity: 0.28;
+      }
+      svg .tick {
+        stroke: var(--line);
+        stroke-width: 1.2;
+      }
+      svg .ringn {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg circle.n {
+        stroke-width: 1.6;
+      }
+
+      /* worked calculations */
+      .calc {
+        font-family: var(--mono);
+        font-size: 13.5px;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 16px 0;
+        overflow-x: auto;
+        line-height: 1.75;
+        font-variant-numeric: tabular-nums;
+      }
+      .calc .c {
+        color: var(--muted);
+      }
+      .calc b {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+      @media (max-width: 720px) {
+        .tiles {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .tile {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .tile b {
+        display: block;
+        font-family: var(--display);
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      .tile span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+      }
+
+      /* bit layout */
+      .bits {
+        display: flex;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1.5px solid var(--c-lb-s);
+        font-family: var(--mono);
+        font-size: 12px;
+        min-width: 520px;
+      }
+      .bits div {
+        padding: 10px 8px;
+        text-align: center;
+        border-left: 1px solid var(--c-lb-s);
+        background: var(--c-lb-f);
+      }
+      .bits div:first-child {
+        border-left: 0;
+        background: var(--sunk);
+      }
+      .bits b {
+        display: block;
+        font-family: var(--display);
+        font-size: 14px;
+      }
+      .code {
+        font-family: var(--mono);
+        font-size: 13px;
+        background: var(--sunk);
+        border-radius: 10px;
+        padding: 12px 14px;
+        overflow-x: auto;
+        white-space: pre;
+        line-height: 1.6;
+      }
 
       .side {
         display: flex;
@@ -934,113 +1041,52 @@
     </style>
   </head>
   <body>
-    <style>
-      .venn {
-        width: 100%;
-        max-width: 420px;
-        height: auto;
-        display: block;
-        margin: 0 auto;
-      }
-      .venn circle {
-        stroke-width: 1.8;
-      }
-      .venn .vc {
-        fill: var(--c-app-f);
-        stroke: var(--c-app-s);
-        fill-opacity: 0.75;
-      }
-      .venn .va {
-        fill: var(--c-db-f);
-        stroke: var(--c-db-s);
-        fill-opacity: 0.75;
-      }
-      .venn .vp {
-        fill: var(--c-mq-f);
-        stroke: var(--c-mq-s);
-        fill-opacity: 0.75;
-      }
-      .venn text {
-        font-family: var(--display);
-        font-weight: 800;
-        fill: var(--ink);
-      }
-      .venn .big {
-        font-size: 40px;
-      }
-      .venn .pair {
-        font-family: var(--mono);
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .venn .no {
-        font-family: var(--mono);
-        font-size: 12px;
-        font-weight: 600;
-        fill: var(--warn);
-      }
-      .venn .word {
-        font-family: var(--mono);
-        font-size: 12px;
-        font-weight: 400;
-        fill: var(--muted);
-      }
-    </style>
     <header class="hero">
       <div>
         <div class="eyebrow">
-          HLD lecture 2 · Concept &amp;&amp; Coding · study notes
+          HLD lecture 7 · Concept &amp;&amp; Coding · study notes
         </div>
-        <h1>CAP <span class="big">Theorem</span></h1>
+        <h1>Design a <span class="big">URL Shortener</span></h1>
         <p class="intro">
-          When your data lives on several machines, you want three things: every
-          read is up to date, every node always answers, and the system survives
-          the network breaking. CAP says you can't have all three at once. This
-          lecture shows why with one small example, and which trade-off you
-          actually get to make.
+          Paste a long link, get back something like
+          <code>lnkd.in/dJkgzKxf</code>. The service looks trivial, but
+          interviewers use it to test two things: sizing (how many characters do
+          you need?) and generating unique IDs across many servers without
+          collisions.
         </p>
       </div>
       <div class="side">
-        <svg
-          class="venn"
-          viewBox="0 0 420 360"
-          role="img"
-          aria-label="Venn diagram of Consistency, Availability and Partition tolerance; pairs CA, CP, AP possible, all three not possible"
-        >
-          <circle class="vc" cx="150" cy="130" r="105" />
-          <circle class="va" cx="270" cy="130" r="105" />
-          <circle class="vp" cx="210" cy="232" r="105" />
-          <text class="big" x="95" y="112" text-anchor="middle">C</text>
-          <text class="word" x="95" y="132" text-anchor="middle">
-            consistency
-          </text>
-          <text class="big" x="325" y="112" text-anchor="middle">A</text>
-          <text class="word" x="325" y="132" text-anchor="middle">
-            availability
-          </text>
-          <text class="big" x="210" y="300" text-anchor="middle">P</text>
-          <text class="word" x="210" y="320" text-anchor="middle">
-            partition tolerance
-          </text>
-          <text class="pair" x="210" y="92" text-anchor="middle">CA</text>
-          <text class="pair" x="150" y="210" text-anchor="middle">CP</text>
-          <text class="pair" x="270" y="210" text-anchor="middle">AP</text>
-          <text class="no" x="210" y="170" text-anchor="middle">CAP ✕</text>
-        </svg>
+        <span class="cap">The two operations</span>
+        <div class="dg"><div class="dg" data-d="flow"></div></div>
       </div>
     </header>
 
     <div class="legend" aria-label="Diagram colour key">
       <span>Colour key:</span>
       <span
+        ><i
+          style="background: var(--c-client-f); border-color: var(--c-client-s)"
+        ></i
+        >User / browser</span
+      >
+      <span
         ><i style="background: var(--c-app-f); border-color: var(--c-app-s)"></i
-        >Application A</span
+        >Shortener servers</span
       >
       <span
         ><i style="background: var(--c-db-f); border-color: var(--c-db-s)"></i
-        >Database node</span
+        >Database</span
       >
-      <span style="color: var(--warn)">orange ✕ = network link broken</span>
+      <span
+        ><i style="background: var(--c-lb-f); border-color: var(--c-lb-s)"></i
+        >ID coordination</span
+      >
+      <span
+        ><i
+          style="background: var(--c-cache-f); border-color: var(--c-cache-s)"
+        ></i
+        >Cache / failure</span
+      >
     </div>
 
     <div class="wrap">
@@ -1048,25 +1094,25 @@
         <p class="head">In this lecture</p>
         <ol id="rail">
           <li>
-            <a href="#s1"><span>01</span>The setup</a>
+            <a href="#s1"><span>01</span>What we're building</a>
           </li>
           <li>
-            <a href="#s2"><span>C</span>Consistency</a>
+            <a href="#s2"><span>02</span>How short? (sizing)</a>
           </li>
           <li>
-            <a href="#s3"><span>A</span>Availability</a>
+            <a href="#s3"><span>03</span>Option 1: hash functions</a>
           </li>
           <li>
-            <a href="#s4"><span>P</span>Partition tolerance</a>
+            <a href="#s4"><span>04</span>Option 2: base 62</a>
           </li>
           <li>
-            <a href="#s5"><span>05</span>Why not all three</a>
+            <a href="#s5"><span>05</span>Unique IDs, distributed</a>
           </li>
           <li>
-            <a href="#s6"><span>06</span>CA, CP, AP</a>
+            <a href="#s6"><span>06</span>Padding to 7 chars</a>
           </li>
           <li>
-            <a href="#s7"><span>07</span>Real world: pick C or A</a>
+            <a href="#s7"><span>07</span>Final design</a>
           </li>
           <li>
             <a href="#extra"><span>+</span>Good to know</a>
@@ -1080,346 +1126,445 @@
       <main>
         <section class="step" id="s1">
           <div class="snum">
-            Start here <span class="flag">asked directly in interviews</span>
+            The question
+            <span class="flag">very common in product companies</span>
           </div>
-          <h2>The setup: a distributed system with replicated data</h2>
+          <h2>What we're building</h2>
           <p class="lede">
-            The lecture's one-line definition: CAP describes the
-            <b
-              >desirable properties of a distributed system with replicated
-              data</b
-            >. All three words in that phrase matter.
+            LinkedIn does this automatically: paste a long YouTube playlist link
+            into a post and it becomes <code>https://lnkd.in/dJkgzKxf</code>.
+            Both links open the same page. TinyURL is the classic public
+            example.
           </p>
           <div class="eli5">
             <span class="tag">Picture it</span>
             <p>
-              Two shops of the same bakery chain, one in India and one in the
-              US, each with a copy of the same price list. Whenever head office
-              changes a price in one shop, that shop phones the other to update
-              its copy. Customers don't care which shop they call. They just
-              want the right price, and they want someone to pick up.
+              A cloakroom. You hand over your big coat (the long URL) and get a
+              small numbered ticket (the short code). Show the ticket later and
+              you get the same coat back. The whole design is about making sure
+              no two coats ever get the same ticket number, even with many
+              cloakroom attendants working at once.
             </p>
           </div>
-          <figure>
-            <div class="dg" data-d="setup"></div>
-            <figcaption>
-              Application A queries the system. DB node B (India) and DB node C
-              (US) hold the same data and keep each other in sync.
-            </figcaption>
-          </figure>
+          <h3>Two APIs</h3>
           <ul>
             <li>
-              <b>Distributed:</b> the data is on more than one machine, here
-              node B in India and node C in the US.
+              <b>POST</b> a long URL. The service generates a short code, stores
+              <code>short → long</code> in a table, and returns the short URL.
             </li>
             <li>
-              <b>Replicated:</b> both nodes hold the same data. A write on B is
-              copied to C.
-            </li>
-            <li>
-              The user (application A) doesn't know or care which node answers.
-              To them it's one system.
+              <b>GET</b> the short URL. The service looks up the code in the
+              table and redirects the browser to the long URL.
             </li>
           </ul>
-          <h3>Why it's asked early</h3>
-          <p>
-            CAP decides trade-offs at the very start of a design. If you pick
-            the wrong side and discover it later, you may have to redesign the
-            whole system. So know which property you're willing to give up
-            before you draw anything.
-          </p>
-        </section>
-
-        <section class="step" id="s2">
-          <div class="snum">The C</div>
-          <h2>Consistency</h2>
-          <p class="lede">
-            Every read, from any node, at any moment, returns the
-            <b>latest</b> written value.
-          </p>
-          <figure>
-            <div class="dg" data-d="cons"></div>
-            <figcaption>
-              B had a = 4. A writes a = 5 to B, B copies it to C, and a read
-              from C now returns 5.
-            </figcaption>
-          </figure>
-          <p>
-            The lecture's example: node B holds <code>a = 4</code>. Application
-            A writes <code>a = 5</code>. B saves it and replicates it to C, so C
-            changes from 4 to 5. Now whether A reads from B or C, it gets 5.
-            That's consistency.
-          </p>
-        </section>
-
-        <section class="step" id="s3">
-          <div class="snum">The A</div>
-          <h2>Availability</h2>
-          <p class="lede">
-            Every node <b>responds</b> to every request. The response can be a
-            success or a failure, but it must be a response, never silence or a
-            timeout.
-          </p>
-          <figure>
-            <div class="dg" data-d="avail"></div>
-            <figcaption>Both nodes answer whatever they're asked.</figcaption>
-          </figure>
-          <div class="eli5">
-            <span class="tag">Picture it</span>
-            <p>
-              Available means the shop always picks up the phone. It might say
-              "sorry, out of stock", which still counts. What doesn't count is
-              the phone ringing forever.
-            </p>
-          </div>
-          <div class="beyond">
-            <span class="tag">Beyond the lecture</span>
-            <p>
-              The formal definition says every request to a
-              <em>non-failing</em> node gets a non-error response. That response
-              is <b>not guaranteed to be the latest data</b>, and that's exactly
-              where it clashes with consistency.
-            </p>
-          </div>
-        </section>
-
-        <section class="step" id="s4">
-          <div class="snum">
-            The P <span class="flag">the confusing one</span>
-          </div>
-          <h2>Partition tolerance</h2>
-          <p class="lede">
-            A <b>partition</b> is a break in communication between nodes: B and
-            C can no longer talk to each other. <b>Partition tolerance</b> means
-            that even when that happens, the <b>system stays up</b>, and A can
-            still send requests and get them handled.
-          </p>
-          <div class="eli5">
-            <span class="tag">Picture it</span>
-            <p>
-              The phone line between the India shop and the US shop is cut.
-              Partition tolerant means both shops stay open for customers
-              anyway. Not partition tolerant means the whole chain closes until
-              the line is fixed.
-            </p>
-          </div>
-          <figure>
-            <div class="dg" data-d="part"></div>
-            <figcaption>
-              The B–C link is broken, but the system as a whole is still up and
-              A can still query it. The break is hidden from the user.
-            </figcaption>
-          </figure>
-          <p>
-            The lecture's simple way to say it:
-            <b
-              >after the partition breaks, is the system still up, accepting and
-              fulfilling requests?</b
-            >
-            If yes, it's partition tolerant.
-          </p>
-        </section>
-
-        <section class="step" id="s5">
-          <div class="snum">The theorem</div>
-          <h2>Why you can't have all three</h2>
-          <p class="lede">
-            Possible: <b>CA</b>, <b>CP</b>, <b>AP</b>. Not possible: <b>CAP</b>.
-            Here's the example that proves it.
-          </p>
-          <figure>
-            <div class="dg" data-d="conflict"></div>
-            <figcaption>
-              The link breaks for 5 minutes. A writes a = 6 to B. C never hears
-              about it and still has a = 5.
-            </figcaption>
-          </figure>
-          <ol>
-            <li>B and C both hold <code>a = 5</code>.</li>
-            <li>
-              The B–C link breaks (a partition) for, say, 5 minutes. We want the
-              system to stay up (P).
-            </li>
-            <li>
-              A writes <code>a = 6</code>. It lands on B. B tries to replicate
-              to C, but the update can't get through.
-            </li>
-            <li>
-              Now A reads <code>a</code> from C. C has two choices:
-              <ul>
-                <li>
-                  <b>Answer 5.</b> It's available, but that's old data, so
-                  <b>consistency is lost</b>.
-                </li>
-                <li>
-                  <b>Refuse to answer until it's back in sync.</b> That keeps
-                  things consistent, but C isn't responding, so
-                  <b>availability is lost</b>.
-                </li>
-              </ul>
-            </li>
-          </ol>
-          <p>
-            There is no third option. During a partition you have to give up C
-            or A. So all three together is impossible.
-          </p>
-        </section>
-
-        <section class="step" id="s6">
-          <div class="snum">The three possible combos</div>
-          <h2>CA, CP and AP</h2>
-
-          <h3>CP: consistent + partition tolerant (give up availability)</h3>
-          <figure>
-            <div class="dg" data-d="cp"></div>
-            <figcaption>
-              During the partition, C is taken out of service. All requests go
-              to B, so every answer is a = 6.
-            </figcaption>
-          </figure>
-          <p>
-            When the link breaks, the lecture says to bring node C <b>down</b>,
-            so it stops accepting requests. All reads and writes go to B, and
-            everyone gets <code>a = 6</code>. The system is up (P ✓) and
-            consistent (C ✓), but C isn't responding, so availability is given
-            up (A ✗).
-          </p>
-
-          <h3>AP: available + partition tolerant (give up consistency)</h3>
-          <figure>
-            <div class="dg" data-d="ap"></div>
-            <figcaption>
-              Both nodes keep answering. A read from C returns the old a = 5
-              until the link heals.
-            </figcaption>
-          </figure>
-          <p>
-            Keep both nodes answering during the partition. B says 6, C says 5.
-            Both respond (A ✓) and the system is up (P ✓), but readers can get
-            different answers (C ✗). When the link comes back, C catches up.
-            This is called <b>eventual consistency</b>.
-          </p>
-
-          <h3>CA: consistent + available (give up partition tolerance)</h3>
-          <figure>
-            <div class="dg" data-d="ca"></div>
-            <figcaption>
-              To stay consistent and available, the system has to stop when the
-              link breaks.
-            </figcaption>
-          </figure>
-          <p>
-            You can only have both C and A if there's never a partition. The
-            lecture's example: the moment B and C lose contact, you
-            <b>stop the whole system</b> (A shouldn't query at all), so no one
-            ever sees inconsistent data. While the network is healthy you're
-            fully consistent and available, but you are
-            <b>not partition tolerant</b>. A 10-minute network blip means 10
-            minutes of downtime.
-          </p>
           <div class="tw">
             <table>
               <thead>
                 <tr>
-                  <th>Choice</th>
-                  <th>During a partition…</th>
-                  <th>Gives up</th>
+                  <th>short_url</th>
+                  <th>long_url</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>CP</td>
-                  <td>
-                    Nodes that can't sync stop answering. Everyone who gets an
-                    answer gets the latest data.
+                  <td class="mono">dJkgzKx</td>
+                  <td class="mono">
+                    https://www.youtube.com/playlist?list=PL6W8uoQQ2c61X…
                   </td>
-                  <td><span class="pill no">Availability</span></td>
                 </tr>
                 <tr>
-                  <td>AP</td>
-                  <td>
-                    All nodes keep answering. Some answers may be stale until
-                    the link heals.
+                  <td class="mono">00000g8</td>
+                  <td class="mono">
+                    https://example.com/some/very/long/path?with=params
                   </td>
-                  <td><span class="pill no">Consistency</span></td>
-                </tr>
-                <tr>
-                  <td>CA</td>
-                  <td>The whole system stops.</td>
-                  <td><span class="pill no">Partition tolerance</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
         </section>
 
-        <section class="step" id="s7">
-          <div class="snum">
-            What to say in the interview
-            <span class="flag">★ remember this</span>
-          </div>
-          <h2>In the real world, P is not optional</h2>
+        <section class="step" id="s2">
+          <div class="snum">Requirement analysis</div>
+          <h2>How short can the code be?</h2>
           <p class="lede">
-            Networks between machines and data centres <b>will</b> break
-            sometimes. Stopping the entire system every time that happens isn't
-            acceptable. So in a real distributed system you
-            <b>always keep P</b>, and the real choice is between <b>C and A</b>,
-            which means CP or AP.
+            The interviewer says "as short as possible". That isn't a number.
+            You work it out from <b>traffic</b> and the
+            <b>characters allowed</b>.
+          </p>
+          <h3>Step 1: how many URLs must we support?</h3>
+          <div class="calc">
+            <div>
+              traffic = 10 million new URLs / day
+              <span class="c">(given by interviewer)</span>
+            </div>
+            <div>per year = 10 M × 365 = 3,650 M</div>
+            <div>
+              lifetime = 100 years
+              <span class="c">(we don't want to run out)</span>
+            </div>
+            <div>
+              total = 3,650 M × 100 = 365,000 M = <b>365 billion URLs</b>
+            </div>
+          </div>
+          <h3>Step 2: which characters?</h3>
+          <p>
+            Usually <code>0–9</code> (10) + <code>a–z</code> (26) +
+            <code>A–Z</code> (26) = <b>62 characters</b>. Each position of the
+            code can be any of 62, so a code of length L gives 62<sup>L</sup>
+            combinations.
+          </p>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Length</th>
+                  <th>Combinations</th>
+                  <th>Enough for 365 B?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td class="mono">62</td>
+                  <td><span class="pill no">no</span></td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td class="mono">62² = 3,844</td>
+                  <td><span class="pill no">no</span></td>
+                </tr>
+                <tr>
+                  <td>6</td>
+                  <td class="mono">62⁶ ≈ 56 billion</td>
+                  <td><span class="pill no">no</span></td>
+                </tr>
+                <tr>
+                  <td>7</td>
+                  <td class="mono">62⁷ ≈ 3.5 trillion</td>
+                  <td><span class="pill yes">yes</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            So the answer is <b>7 characters</b>. Using a calculator for these
+            powers is fine in an interview.
+          </p>
+        </section>
+
+        <section class="step" id="s3">
+          <div class="snum">Generating the code · option 1</div>
+          <h2>Why not just hash the long URL?</h2>
+          <p class="lede">
+            The obvious idea is to run the long URL through <b>MD5</b> or
+            <b>SHA-1</b>. The problem is that their output is far longer than 7
+            characters.
+          </p>
+          <ul>
+            <li>
+              <b>MD5</b> gives 128 bits = 16 bytes. One hex digit is 4 bits (a
+              nibble), so that's <b>32 hex characters</b>.
+            </li>
+            <li>
+              <b>SHA-1</b> gives 160 bits = 20 bytes = <b>40 hex characters</b>.
+            </li>
+          </ul>
+          <p>
+            We need 7, so we'd have to <b>trim</b> to the first 7 characters and
+            throw the rest away. Two different URLs can easily share the same
+            first 7 characters, which is a <b>collision</b>: two long URLs
+            mapped to one short code.
+          </p>
+          <div class="code">
+            URL A → MD5 → 9e107d9d372bb6826bd81d3542a419d6 → keep 7 → 9e107d9
+            URL B → MD5 → 9e107d9f81c0a52d7e6f02b8c1d34a77 → keep 7 → 9e107d9 ✕
+            collision
+          </div>
+          <p class="foot" style="margin-top: 8px">
+            Hash strings above are illustrative.
+          </p>
+          <p>
+            With billions of URLs, collisions would be frequent.
+            <b>That's why the lecture rejects hash functions.</b>
+          </p>
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <p>
+              Some designs keep hashing but handle collisions: check the DB, and
+              if the code is taken, append a salt to the URL and hash again. It
+              works, but every write needs a DB lookup and may need retries.
+              That gets slow at scale, which is why the ID-based approach below
+              is preferred.
+            </p>
+          </div>
+        </section>
+
+        <section class="step" id="s4">
+          <div class="snum">
+            Generating the code · option 2
+            <span class="flag">★ the chosen approach</span>
+          </div>
+          <h2>Base-62 encoding of a unique number</h2>
+          <p class="lede">
+            Give each URL a <b>unique integer ID</b>, then write that integer in
+            <b>base 62</b> using our 62 characters. A different ID always gives
+            a different code, so there are no collisions by construction.
           </p>
           <div class="eli5">
             <span class="tag">Picture it</span>
             <p>
-              Phone lines between shops do go down. "Close every shop when the
-              line drops" isn't a real plan. The only real question is: while
-              the line is down, do shops refuse to sell (CP), or sell at
-              possibly outdated prices (AP)?
+              We normally count with 10 symbols (0–9), so after 9 comes "10".
+              Base 62 counts with 62 symbols: 0–9, then a–z, then A–Z. After 9
+              comes a, after z comes A, and only after Z do you roll over to
+              "10". Big numbers get very short.
             </p>
           </div>
+          <h3>Digit values</h3>
           <p>
-            The line to use in an interview:
-            <b
-              >"We never trade off partition tolerance. We trade off between
-              consistency and availability, based on the use case."</b
-            >
+            <code>0–9 → 0–9</code> ·
+            <code>a → 10, b → 11, c → 12 … g → 16 … z → 35</code> ·
+            <code>A → 36 … Z → 61</code>
           </p>
-          <div class="two">
-            <div class="x">
-              <h4>Choose CP when wrong data is worse than no data</h4>
-              <ul>
-                <li>Bank balances, payments, wallet deductions</li>
-                <li>Booking the last seat or ticket</li>
-                <li>Inventory for flash sales</li>
-              </ul>
+          <h3>Worked example: 1000 in base 62</h3>
+          <div class="calc">
+            <div>1000 ÷ 62 = 16 remainder <b>8</b></div>
+            <div>16 ÷ 62 = 0 remainder <b>16</b></div>
+            <div>
+              <span class="c">read remainders bottom → top:</span> 16, 8 → g, 8
+              → <b>"g8"</b>
             </div>
-            <div class="x">
-              <h4>Choose AP when a slightly old answer is fine</h4>
-              <ul>
-                <li>Social feeds, like counts, view counts</li>
-                <li>Product catalogue, recommendations</li>
-                <li>Chat "last seen", presence status</li>
-              </ul>
+          </div>
+          <p>This leaves two problems, and the lecture solves both:</p>
+          <ol>
+            <li>
+              <b>We need an ID generator</b> that produces unique numbers across
+              many servers (next section).
+            </li>
+            <li>
+              <b>The length varies.</b> 1000 gave only 2 characters, but we want
+              exactly 7 (section 6).
+            </li>
+          </ol>
+        </section>
+
+        <section class="step" id="s5">
+          <div class="snum">
+            The real interview question
+            <span class="flag">★★ "unique ID in a distributed system"</span>
+          </div>
+          <h2>Generating unique IDs across many servers</h2>
+          <p class="lede">
+            At 10 million URLs a day, one database with an auto-increment column
+            won't do. Its capacity is limited, and it's a single point of
+            failure. With many servers, they must never hand out the same
+            number. The lecture compares three approaches.
+          </p>
+
+          <h3>Approach 1: ticket server</h3>
+          <figure>
+            <div class="dg" data-d="ticket"></div>
+            <figcaption>
+              Every app server asks one central auto-increment service for the
+              next ID.
+            </figcaption>
+          </figure>
+          <p>
+            A <b>centralised auto-increment service</b> that all app servers
+            call. It's simple, and IDs are unique. But it's the same problem
+            again: if the ticket server goes down,
+            <b>nobody can create a short URL</b>. It's a single point of failure
+            and also a bottleneck. <b>Not much use at scale.</b>
+          </p>
+
+          <h3>Approach 2: Snowflake (Twitter)</h3>
+          <p>
+            Each server builds IDs itself from the <b>time</b>, its own
+            <b>machine ID</b> and a <b>sequence number</b>. Nobody needs to
+            coordinate, because two machines can't share a machine ID and one
+            machine never repeats a (timestamp, sequence) pair.
+          </p>
+          <div class="tw">
+            <div class="bits">
+              <div style="flex: 1"><b>1</b>unused</div>
+              <div style="flex: 41">
+                <b>41 bits · timestamp</b>ms since a custom epoch (~69 years)
+              </div>
+              <div style="flex: 10"><b>10 · machine</b>up to 1,024</div>
+              <div style="flex: 12"><b>12 · sequence</b>4,096 / ms</div>
             </div>
+          </div>
+          <p>
+            The lecture: easy to implement because it depends on the timestamp,
+            not on a central server. If two requests arrive in the same
+            millisecond on different machines, the machine ID differs. On the
+            same machine, the sequence number differs, and it resets once it
+            hits its limit. (Exact bit sizes: see "Beyond the lecture".)
+          </p>
+
+          <h3>Approach 3: ZooKeeper ranges (the lecturer's preference)</h3>
+          <figure>
+            <div class="dg" data-d="zk"></div>
+            <figcaption>
+              ZooKeeper hands each server its own block of numbers. Each server
+              counts up inside its block with no further coordination.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Apache ZooKeeper</b> is a coordination service. It helps
+              distributed applications
+              <b>coordinate with each other reliably</b>. It is
+              <b>not</b> itself an ID generator. We put the range logic on top
+              of it.
+            </li>
+            <li>
+              The total ID space is 0 to 3.5 trillion (62⁷). ZooKeeper splits it
+              into <b>ranges</b>, for example 0–1M, 1M–2M, 2M–3M and so on.
+            </li>
+            <li>
+              Each server (worker) is <b>allotted a range</b> and uses only
+              numbers inside it. Two servers can never collide.
+            </li>
+            <li>
+              When a server uses up its range, it asks ZooKeeper for the
+              <b>next unused range</b>, say 13M–14M.
+            </li>
+            <li>
+              If a server dies halfway through its million, those unused numbers
+              are lost. That's fine: we have 3.5 trillion and only need 365
+              billion.
+            </li>
+          </ul>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Approach</th>
+                  <th>Unique?</th>
+                  <th>Single point of failure?</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>One DB auto-increment</td>
+                  <td>Yes</td>
+                  <td><span class="pill no">yes</span></td>
+                  <td>
+                    Doesn't scale. With multiple DBs you need synchronisation.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Ticket server</td>
+                  <td>Yes</td>
+                  <td><span class="pill no">yes</span></td>
+                  <td>Central bottleneck.</td>
+                </tr>
+                <tr>
+                  <td>Snowflake</td>
+                  <td>Yes</td>
+                  <td><span class="pill yes">no</span></td>
+                  <td>Time-ordered IDs. Depends on machine clocks.</td>
+                </tr>
+                <tr>
+                  <td>ZooKeeper ranges</td>
+                  <td>Yes</td>
+                  <td><span class="pill yes">no</span></td>
+                  <td>
+                    Servers work independently inside their range. Some numbers
+                    are wasted, which is fine.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           <div class="beyond">
             <span class="tag">Beyond the lecture</span>
             <ul>
               <li>
-                <b>Real databases:</b> MongoDB (default settings) and HBase lean
-                <b>CP</b>. Cassandra, DynamoDB and CouchDB lean <b>AP</b>. Many
-                let you tune this per query (for example Cassandra's consistency
-                levels, MongoDB's read and write concerns).
+                Snowflake's real layout is
+                <b
+                  >1 unused + 41 timestamp + 10 machine + 12 sequence = 64
+                  bits</b
+                >. 41 bits of milliseconds is about 69 years. 12 bits allows
+                4,096 IDs per millisecond per machine. The 10 machine bits are
+                often split into 5 datacenter + 5 worker.
               </li>
               <li>
-                A single-node relational database (one PostgreSQL server) is
-                often called "CA". It's consistent and available, but only
-                because there's no network between nodes to partition.
+                A Snowflake ID is a 64-bit number (up to about 9.2 × 10¹⁸),
+                which gives about 11 base-62 characters. It's bigger than the
+                7-character space, so for a 7-char shortener the range approach
+                fits better.
               </li>
               <li>
-                <b>PACELC</b> extends CAP: if there's a <b>P</b>artition, choose
-                <b>A</b> or <b>C</b>; <b>E</b>lse (normal operation), choose
-                <b>L</b>atency or <b>C</b>onsistency. Even without failures,
-                waiting for every replica to confirm a write makes things
-                slower.
+                Sequential IDs make short codes guessable (<code>00000g8</code>,
+                <code>00000g9</code>…). If that matters, shuffle the ID with a
+                reversible bit permutation before encoding.
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="step" id="s6">
+          <div class="snum">Fixing the length</div>
+          <h2>Padding to exactly 7 characters</h2>
+          <p>
+            ID 16 in base 62 is just <code>g</code>, one character. Pad it to 7,
+            for example <code>000000g</code> (or with a padding symbol, the way
+            base-64 uses <code>==</code>).
+          </p>
+          <p>
+            <b>Can a code ever exceed 7 characters?</b> No. We only use IDs from
+            0 up to 62⁷ − 1 (about 3.5 trillion), which is
+            <code>ZZZZZZZ</code> in base 62. Any ID in that range encodes to ≤ 7
+            characters: exactly 7 means use it as is, fewer means pad it.
+          </p>
+        </section>
+
+        <section class="step" id="s7">
+          <div class="snum">Putting it together</div>
+          <h2>Final design</h2>
+          <figure>
+            <div class="dg" data-d="arch"></div>
+            <figcaption>
+              Users hit a load balancer. App servers get ID ranges from
+              ZooKeeper, encode IDs to base 62, and store short → long in a DB
+              with a cache in front.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Load balancer</b> in front of multiple shortener servers,
+              possibly across several data centres.
+            </li>
+            <li><b>ZooKeeper</b> hands each server its ID range.</li>
+            <li>
+              <b>DB:</b> a relational DB is enough. It's one simple table (<code
+                >id, short_url, long_url</code
+              >).
+            </li>
+            <li>
+              <b>Cache</b> for popular short codes, since reads are far more
+              common than writes.
+            </li>
+            <li>
+              No CDN is needed. The lecture notes the interesting part for
+              interviewers is code generation, not the boxes.
+            </li>
+          </ul>
+          <div class="beyond">
+            <span class="tag">Beyond the lecture</span>
+            <ul>
+              <li>
+                <b>301 vs 302 redirect:</b> 301 (permanent) is cached by
+                browsers, so repeat clicks skip your server. That's faster and
+                cheaper, but you lose click analytics. 302 (temporary) sends
+                every click through your server, so you can count clicks,
+                countries and devices. Pick based on whether analytics matter.
+              </li>
+              <li>
+                Optional features to mention: custom aliases, expiry dates, and
+                rate limiting on the POST API to stop abuse.
               </li>
             </ul>
           </div>
@@ -1484,155 +1629,101 @@
           </div>
           <h2>Good to know as an engineer</h2>
           <p class="lede">
-            CAP is the headline. These are the details engineers actually argue
-            about when choosing and running databases.
+            Two more building blocks worth knowing, plus the problems a real
+            shortener fights every day.
           </p>
 
-          <h3>Consistency is a spectrum, not a switch</h3>
-          <div class="tw">
-            <table>
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Guarantee</th>
-                  <th>Example</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Linearizable (strong)</td>
-                  <td>
-                    Behaves like a single copy. Once a write finishes, every
-                    later read anywhere sees it.
-                  </td>
-                  <td>etcd, ZooKeeper, Spanner</td>
-                </tr>
-                <tr>
-                  <td>Sequential</td>
-                  <td>
-                    Everyone sees operations in the same order, though not
-                    necessarily in real time.
-                  </td>
-                  <td>Some replicated logs</td>
-                </tr>
-                <tr>
-                  <td>Causal</td>
-                  <td>
-                    If B depends on A (a reply to a comment), everyone sees A
-                    before B. Unrelated writes may appear in any order.
-                  </td>
-                  <td>Some geo-replicated stores (for example COPS)</td>
-                </tr>
-                <tr>
-                  <td>Read-your-writes</td>
-                  <td>
-                    You always see your own updates, even if others don't yet.
-                  </td>
-                  <td>Session guarantees</td>
-                </tr>
-                <tr>
-                  <td>Monotonic reads</td>
-                  <td>You never see data go backwards in time.</td>
-                  <td>Sticky reads to one replica</td>
-                </tr>
-                <tr>
-                  <td>Eventual</td>
-                  <td>If writes stop, all replicas converge eventually.</td>
-                  <td>DNS, Cassandra (default levels)</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <h3>Key Generation Service (KGS)</h3>
           <p>
-            Strongest at the top, weakest at the bottom. Each step down is
-            cheaper and more available. Many products let you pick per request.
+            An alternative to computing a code at write time:
+            <b>pre-generate</b> unused 7-character codes in bulk and store them
+            in a keys table.
           </p>
-
-          <h3>CAP's C is not ACID's C</h3>
           <ul>
             <li>
-              <b>CAP consistency</b> = all replicas agree, so a read returns the
-              latest write (linearizability).
+              Each app server grabs a <b>batch</b> of unused keys (say 1,000)
+              into memory and marks them used in the table. Writes then need no
+              computation or collision check at all.
             </li>
             <li>
-              <b>ACID consistency</b> = a transaction leaves the database
-              obeying its rules (constraints, foreign keys, balance ≥ 0).
+              If a server crashes, its unused batch is lost. That's the same
+              trade-off as ZooKeeper ranges, and fine with trillions available.
+            </li>
+            <li>
+              Handing out batches must be atomic (a DB transaction or row lock)
+              so two servers never get the same batch.
             </li>
           </ul>
-          <p>
-            Same word, different ideas. Mixing them up is a classic interview
-            trap.
-          </p>
 
-          <h3>How CP systems stay consistent: consensus</h3>
+          <h3>Bloom filter: a fast "definitely not" check</h3>
           <div class="eli5">
             <span class="tag">Picture it</span>
             <p>
-              A committee only acts when a majority votes yes. If the room
-              splits into two groups, only the bigger group can reach a
-              majority, so the two halves can never make conflicting decisions.
+              A guest list where, for each name, you tick 3 boxes on a big grid.
+              To check a name, look at its 3 boxes. If any box is empty, the
+              person <b>definitely</b> isn't on the list. If all are ticked,
+              they're <b>probably</b> on it, because other names might have
+              ticked those same boxes.
             </p>
           </div>
+          <figure>
+            <div class="tw">
+              <div class="bloom">
+                <span>0</span><span class="on">1</span><span>0</span
+                ><span class="on">1</span><span>0</span><span>0</span
+                ><span class="on">1</span><span>0</span><span class="on">1</span
+                ><span>0</span><span>0</span><span class="on">1</span>
+              </div>
+            </div>
+            <figcaption>
+              A 12-bit Bloom filter. Inserting a key sets the bits at k hash
+              positions. A lookup checks those same positions: any 0 means
+              "definitely absent".
+            </figcaption>
+          </figure>
           <ul>
             <li>
-              <b>Raft</b> and <b>Paxos</b> are the standard algorithms. The
-              nodes elect a <b>leader</b>, and a write is committed once a
-              <b>majority</b> (a quorum) has stored it.
+              <b>No false negatives</b>, some false positives. Very little
+              memory: about 10 bits per item gives a roughly 1% false-positive
+              rate.
             </li>
             <li>
-              With <b>2f + 1</b> nodes you survive <b>f</b> failures: 3 nodes
-              survive 1, and 5 survive 2. That's why clusters are odd-sized.
+              Here: when using hashing or custom aliases, check "is this code
+              already taken?" in memory before touching the DB.
             </li>
             <li>
-              This prevents <b>split-brain</b>, where two halves of a
-              partitioned cluster each think they're in charge and accept
-              conflicting writes.
-            </li>
-            <li>
-              You rarely implement it yourself. You use it through etcd
-              (Kubernetes), ZooKeeper, Consul, or Kafka's KRaft.
+              Also used by LSM-tree databases (lecture 9's notes), CDNs, and to
+              skip already-seen items in feeds.
             </li>
           </ul>
 
-          <h3>Availability in "nines"</h3>
-          <div class="tw">
-            <table>
-              <thead>
-                <tr>
-                  <th>Availability</th>
-                  <th>Downtime per year</th>
-                  <th>Per month</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>99% (two nines)</td>
-                  <td class="mono">3.65 days</td>
-                  <td class="mono">~7.3 hours</td>
-                </tr>
-                <tr>
-                  <td>99.9%</td>
-                  <td class="mono">8.76 hours</td>
-                  <td class="mono">~43.8 min</td>
-                </tr>
-                <tr>
-                  <td>99.99%</td>
-                  <td class="mono">52.6 min</td>
-                  <td class="mono">~4.4 min</td>
-                </tr>
-                <tr>
-                  <td>99.999%</td>
-                  <td class="mono">5.26 min</td>
-                  <td class="mono">~26 s</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p>
-            Availabilities <b>multiply</b> when dependencies are in series.
-            Three services at 99.9% each give roughly 99.7% for the whole
-            request. Every hop you add costs a little availability.
-          </p>
+          <h3>What production shorteners worry about</h3>
+          <ul>
+            <li>
+              <b>Read-heavy traffic:</b> reads can outnumber writes 100:1. Cache
+              the hottest codes, since a small share of links gets most clicks.
+            </li>
+            <li>
+              <b>Abuse:</b> shorteners hide phishing and malware links. Scan
+              destinations (for example Google Safe Browsing), rate-limit
+              creation, and allow takedowns.
+            </li>
+            <li>
+              <b>Expiry and custom aliases:</b> store <code>expires_at</code>,
+              and clean up in the background. Custom aliases need a uniqueness
+              check.
+            </li>
+            <li>
+              <b>Analytics pipeline:</b> with 302 redirects, write click events
+              to a queue (lecture 5's message queue) and aggregate them
+              asynchronously. Never slow the redirect itself.
+            </li>
+            <li>
+              <b>Storage choice at scale:</b> one simple table works in SQL, but
+              a key-value store (lecture 9) shards
+              <code>short → long</code> lookups naturally.
+            </li>
+          </ul>
         </section>
 
         <section class="step" id="revise">
@@ -1640,62 +1731,54 @@
           <h2>Revision questions</h2>
           <p class="lede">Try answering out loud before opening each one.</p>
           <details>
-            <summary>Define the CAP theorem in one line.</summary>
+            <summary>How do you decide the short code length?</summary>
             <p>
-              For a distributed system with replicated data, you can guarantee
-              at most two of consistency, availability and partition tolerance
-              at the same time.
+              Estimate the total URLs (10 M/day × 365 × 100 years ≈ 365 billion)
+              and count the allowed characters (62). 62⁶ ≈ 56 billion is too
+              few, and 62⁷ ≈ 3.5 trillion is enough, so 7 characters.
             </p>
           </details>
           <details>
-            <summary>What does availability mean in CAP?</summary>
+            <summary>Why not use MD5 or SHA-1?</summary>
             <p>
-              Every node responds to every request, with success or failure,
-              never silence. The response isn't guaranteed to be the latest
-              data.
+              They produce 32 or 40 hex characters. Trimming to 7 causes
+              frequent collisions between different long URLs.
             </p>
           </details>
           <details>
-            <summary>What is partition tolerance, in simple words?</summary>
+            <summary>Convert 1000 to base 62.</summary>
             <p>
-              If communication between nodes breaks, the system stays up and
-              keeps accepting and fulfilling requests.
+              1000 = 16 × 62 + 8, so the digits are 16 and 8, which is "g8".
             </p>
           </details>
           <details>
-            <summary>Walk through why CAP (all three) is impossible.</summary>
+            <summary>Why is a ticket server a poor ID generator?</summary>
             <p>
-              The link between B and C breaks and a write goes to B. C now has
-              old data. If C answers, it's inconsistent. If C refuses, it's
-              unavailable. It can't do both.
+              It's centralised: a single point of failure and a bottleneck for
+              every write.
             </p>
           </details>
           <details>
-            <summary>How does a CP system behave during a partition?</summary>
+            <summary>What are the parts of a Snowflake ID?</summary>
             <p>
-              Nodes that can't stay in sync stop serving requests (in the
-              lecture, node C is taken down). Answers from the remaining nodes
-              are consistent.
+              Timestamp (41 bits), machine ID (10 bits) and sequence number (12
+              bits), plus 1 unused bit.
             </p>
           </details>
           <details>
             <summary>
-              Why is CA not a realistic choice for distributed systems?
+              How does the ZooKeeper approach guarantee uniqueness?
             </summary>
             <p>
-              It means shutting the whole system down whenever the network
-              between nodes breaks, and network breaks are common. So P is
-              always kept, and you choose between C and A.
+              ZooKeeper allots each server a non-overlapping range of IDs.
+              Servers generate only within their range, and ask for a new unused
+              range when theirs runs out.
             </p>
           </details>
           <details>
-            <summary>
-              CP or AP for a payment wallet? For an Instagram like-count?
-            </summary>
+            <summary>Can a base-62 code be longer than 7 characters?</summary>
             <p>
-              Wallet: CP, because a wrong balance is unacceptable. Like-count:
-              AP, because a slightly stale number is fine and the page must
-              always load.
+              No. IDs are kept below 62⁷ (ZZZZZZZ). Shorter codes are padded.
             </p>
           </details>
 
@@ -1703,39 +1786,31 @@
           <ul class="sources">
             <li>
               <a
-                href="https://www.mongodb.com/resources/basics/databases/cap-theorem"
+                href="https://en.wikipedia.org/wiki/Snowflake_ID"
                 target="_blank"
                 rel="noopener"
-                >MongoDB: Mastering the CAP theorem</a
+                >Wikipedia: Snowflake ID</a
               >
             </li>
             <li>
               <a
-                href="https://www.scylladb.com/glossary/cap-theorem/"
+                href="https://linkila.com/blog/301-vs-302-vs-303-vs-307-vs-308-whic-redirection-code-should-i-use-for-short-urls/"
                 target="_blank"
                 rel="noopener"
-                >ScyllaDB: What is the CAP theorem?</a
+                >Which redirect code to use for short URLs</a
               >
             </li>
             <li>
               <a
-                href="https://www.instaclustr.com/blog/cassandra-vs-mongodb/"
+                href="https://adhdecode.com/articles/system-design/system-design-url-shortener/"
                 target="_blank"
                 rel="noopener"
-                >Instaclustr: Cassandra vs MongoDB using CAP</a
-              >
-            </li>
-            <li>
-              <a
-                href="https://luminousmen.com/post/cap-and-pacelc-theorems-in-plain-english/"
-                target="_blank"
-                rel="noopener"
-                >CAP and PACELC in plain English</a
+                >URL shortener: base62 encoding and redirects</a
               >
             </li>
           </ul>
           <p class="foot">
-            Built from the lecture's audio transcript and whiteboard frames (19
+            Built from the lecture's audio transcript and whiteboard frames (32
             min). Sections marked "Beyond the lecture" come from outside the
             video.
           </p>
@@ -1744,225 +1819,291 @@
     </div>
 
     <script>
-      (function () {
-        function base(o) {
-          // shared layout: application A on top, DB node B (India) bottom-left, DB node C (US) bottom-right
-          var h = o.h || 270;
-          var n = [
+      window.DIAGRAMS = {
+        flow: {
+          h: 230,
+          alt: "POST long URL returns short URL; GET short URL redirects to long URL via a lookup table",
+          n: [
+            {
+              t: "client",
+              x: 10,
+              y: 30,
+              w: 120,
+              h: 60,
+              l: "User",
+              s: "shortens a link",
+            },
+            {
+              t: "client",
+              x: 10,
+              y: 140,
+              w: 120,
+              h: 60,
+              l: "Browser",
+              s: "opens short link",
+            },
+            {
+              t: "app",
+              x: 250,
+              y: 30,
+              w: 150,
+              h: 170,
+              l: "Shortener",
+              s: "service",
+            },
+            {
+              t: "db",
+              x: 490,
+              y: 80,
+              w: 130,
+              h: 72,
+              l: "URL table",
+              s: "short → long",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [130, 50],
+                [250, 50],
+              ],
+              l: "POST long URL",
+              at: [190, 42],
+            },
+            {
+              p: [
+                [250, 74],
+                [130, 74],
+              ],
+              l: "short URL",
+              at: [190, 92],
+            },
+            {
+              p: [
+                [130, 158],
+                [250, 158],
+              ],
+              l: "GET /g8…",
+              at: [190, 150],
+            },
+            {
+              p: [
+                [250, 182],
+                [130, 182],
+              ],
+              l: "redirect → long",
+              at: [190, 200],
+            },
+            {
+              p: [
+                [400, 116],
+                [490, 116],
+              ],
+              both: 1,
+              l: "save / look up",
+              at: [445, 108],
+            },
+          ],
+        },
+
+        ticket: {
+          h: 250,
+          alt: "Three app servers all call one central ticket server for IDs",
+          n: [
+            { t: "app", x: 20, y: 20, w: 150, h: 50, l: "App server 1" },
+            { t: "app", x: 245, y: 20, w: 150, h: 50, l: "App server 2" },
+            { t: "app", x: 470, y: 20, w: 150, h: 50, l: "App server 3" },
+            {
+              t: "lb",
+              x: 220,
+              y: 120,
+              w: 200,
+              h: 56,
+              l: "Ticket server",
+              s: "central auto-increment",
+              c: "cache",
+            },
+            { t: "db", x: 280, y: 196, w: 80, h: 44 },
+          ],
+          e: [
+            {
+              p: [
+                [95, 70],
+                [260, 120],
+              ],
+            },
+            {
+              p: [
+                [320, 70],
+                [320, 120],
+              ],
+            },
+            {
+              p: [
+                [545, 70],
+                [380, 120],
+              ],
+            },
+            {
+              p: [
+                [320, 176],
+                [320, 196],
+              ],
+            },
+          ],
+          notes: [
+            { x: 440, y: 156, l: "goes down → nobody", a: "start", bad: 1 },
+            { x: 440, y: 172, l: "can create URLs", a: "start", bad: 1 },
+          ],
+        },
+
+        zk: {
+          h: 270,
+          alt: "ZooKeeper assigns ID ranges 0–1M, 1M–2M, 2M–3M to three servers",
+          n: [
+            {
+              t: "lb",
+              x: 220,
+              y: 14,
+              w: 200,
+              h: 58,
+              l: "ZooKeeper",
+              s: "tracks which ranges are used",
+            },
+            {
+              t: "app",
+              x: 20,
+              y: 150,
+              w: 170,
+              h: 60,
+              l: "Server 1",
+              s: "range 0 – 1M",
+            },
             {
               t: "app",
               x: 235,
-              y: 14,
+              y: 150,
               w: 170,
-              h: 52,
-              l: "Application A",
-              s: o.as || "reads & writes",
+              h: 60,
+              l: "Server 2",
+              s: "range 1M – 2M",
             },
             {
-              t: "db",
-              x: 70,
-              y: 170,
-              w: 160,
-              h: 72,
-              l: "DB node B",
-              s: o.bs || "India",
-              down: o.bdown,
+              t: "app",
+              x: 450,
+              y: 150,
+              w: 170,
+              h: 60,
+              l: "Server 3",
+              s: "range 2M – 3M",
             },
+          ],
+          e: [
             {
-              t: "db",
-              x: 410,
-              y: 170,
-              w: 160,
-              h: 72,
-              l: "DB node C",
-              s: o.cs || "US",
-              down: o.cdown,
-            },
-          ];
-          if (o.zone) n.unshift(o.zone);
-          var e = [
-            Object.assign(
-              {
-                p: [
-                  [280, 66],
-                  [160, 170],
-                ],
-              },
-              o.ab || {},
-            ),
-            Object.assign(
-              {
-                p: [
-                  [360, 66],
-                  [480, 170],
-                ],
-              },
-              o.ac || {},
-            ),
-            Object.assign(
-              {
-                p: [
-                  [230, 212],
-                  [410, 212],
-                ],
-                both: 1,
-                dash: 1,
-              },
-              o.bc || {},
-            ),
-          ];
-          return { h: h, alt: o.alt, n: n, e: e, notes: o.notes || [] };
-        }
-        var cut = { noarrow: 1, bad: 1, both: 0, cut: [320, 212] };
-        window.DIAGRAMS = {
-          setup: base({
-            alt: "Application A with two replicated DB nodes",
-            bc: { l: "replication", at: [320, 204] },
-          }),
-          cons: base({
-            alt: "Write a=5 to B, replicated to C, read from C returns 5",
-            bs: "a = 4 → 5",
-            cs: "a = 5 (copied)",
-            ab: { l: "① write a = 5", at: [214, 110], a: "end" },
-            ac: { both: 1, l: "③ read a → 5 ✓", at: [430, 110], a: "start" },
-            bc: {
-              good: 1,
-              dash: 0,
-              both: 0,
-              l: "② copy a = 5",
-              at: [320, 204],
-            },
-          }),
-          avail: base({
-            alt: "Both nodes respond to requests",
-            ab: { both: 1, l: "success / failure", at: [214, 110], a: "end" },
-            ac: { both: 1, l: "success / failure", at: [430, 110], a: "start" },
-            notes: [
-              {
-                x: 320,
-                y: 266,
-                l: "every node answers · no silence, no timeouts",
-                a: "middle",
-              },
-            ],
-          }),
-          part: base({
-            alt: "B–C link broken, system still up",
-            h: 290,
-            zone: {
-              t: "zone",
-              x: 40,
-              y: 146,
-              w: 560,
-              h: 120,
-              l: "SYSTEM STILL UP",
-            },
-            ab: { both: 1 },
-            ac: { both: 1 },
-            bc: cut,
-            notes: [
-              { x: 320, y: 240, l: "B and C can’t talk", a: "middle", bad: 1 },
-              {
-                x: 320,
-                y: 284,
-                l: "A doesn’t notice · requests still handled",
-                a: "middle",
-              },
-            ],
-          }),
-          conflict: base({
-            alt: "During partition, write a=6 on B cannot reach C, which still has a=5",
-            h: 290,
-            bs: "a = 6 (new write)",
-            cs: "a = 5 (stale!)",
-            ab: { l: "write a = 6", at: [214, 110], a: "end" },
-            ac: { l: "read a → ?", at: [430, 110], a: "start" },
-            bc: Object.assign(
-              { l: "update can’t get through", at: [320, 236] },
-              cut,
-            ),
-            notes: [
-              {
-                x: 320,
-                y: 282,
-                l: "C must choose: answer 5 (lose C) or refuse (lose A)",
-                a: "middle",
-                strong: 1,
-              },
-            ],
-          }),
-          cp: base({
-            alt: "CP: node C taken down during partition, B serves consistent data",
-            h: 290,
-            bs: "a = 6 · serves everything",
-            cs: "refuses requests",
-            cdown: 1,
-            ab: {
+              p: [
+                [270, 72],
+                [105, 150],
+              ],
               both: 1,
-              good: 1,
-              l: "all reads & writes → 6",
-              at: [214, 110],
+              l: "allot range",
+              at: [176, 104],
               a: "end",
             },
-            ac: { noarrow: 1, bad: 1, dash: 1, cut: [420, 118] },
-            bc: cut,
-            notes: [
-              {
-                x: 320,
-                y: 282,
-                l: "C ✓  P ✓  A ✗ (node C isn’t answering)",
-                a: "middle",
-                strong: 1,
-              },
-            ],
-          }),
-          ap: base({
-            alt: "AP: both nodes answer, C returns stale data",
-            h: 290,
-            bs: "a = 6",
-            cs: "a = 5 (old)",
-            ab: { both: 1, l: "read → 6", at: [214, 110], a: "end" },
-            ac: { both: 1, l: "read → 5 (stale)", at: [430, 110], a: "start" },
-            bc: cut,
-            notes: [
-              {
-                x: 320,
-                y: 282,
-                l: "A ✓  P ✓  C ✗ · C catches up when the link heals",
-                a: "middle",
-                strong: 1,
-              },
-            ],
-          }),
-          ca: base({
-            alt: "CA: when the link breaks, the whole system stops",
-            h: 290,
-            zone: {
-              t: "zone",
-              x: 40,
-              y: 146,
-              w: 560,
-              h: 120,
-              l: "LINK BROKE → WHOLE SYSTEM STOPPED",
-              bad: 1,
+            {
+              p: [
+                [320, 72],
+                [320, 150],
+              ],
+              both: 1,
             },
-            bdown: 1,
-            cdown: 1,
-            ab: { noarrow: 1, bad: 1, dash: 1, cut: [220, 118] },
-            ac: { noarrow: 1, bad: 1, dash: 1, cut: [420, 118] },
-            bc: cut,
-            notes: [
-              {
-                x: 320,
-                y: 284,
-                l: "C ✓  A ✓ only while the network is healthy · P ✗",
-                a: "middle",
-                strong: 1,
-              },
-            ],
-          }),
-        };
-      })();
+            {
+              p: [
+                [370, 72],
+                [535, 150],
+              ],
+              both: 1,
+              l: "used up? next range",
+              at: [464, 104],
+              a: "start",
+            },
+          ],
+          notes: [
+            {
+              x: 320,
+              y: 248,
+              l: "each server counts up inside its own range → no two servers ever collide",
+              a: "middle",
+            },
+          ],
+        },
+
+        arch: {
+          h: 300,
+          alt: "Users to load balancer to shortener servers; servers use ZooKeeper for IDs and a cache plus relational DB for storage",
+          n: [
+            { t: "client", x: 245, y: 10, w: 150, h: 44, l: "Users" },
+            { t: "lb", x: 220, y: 84, w: 200, h: 44, l: "Load balancer" },
+            {
+              t: "zone",
+              x: 130,
+              y: 150,
+              w: 380,
+              h: 74,
+              l: "SHORTENER SERVERS",
+            },
+            { t: "app", x: 146, y: 172, w: 110, h: 40, l: "Server 1" },
+            { t: "app", x: 265, y: 172, w: 110, h: 40, l: "Server 2" },
+            { t: "app", x: 384, y: 172, w: 110, h: 40, l: "Server N" },
+            { t: "lb", x: 10, y: 166, w: 100, h: 50, l: "ZooKeeper" },
+            {
+              t: "cache",
+              x: 530,
+              y: 166,
+              w: 100,
+              h: 50,
+              l: "Cache",
+              s: "hot codes",
+            },
+            { t: "db", x: 260, y: 244, w: 120, h: 50, l: "Relational DB" },
+          ],
+          e: [
+            {
+              p: [
+                [320, 54],
+                [320, 84],
+              ],
+              both: 1,
+            },
+            {
+              p: [
+                [320, 128],
+                [320, 150],
+              ],
+            },
+            {
+              p: [
+                [130, 191],
+                [110, 191],
+              ],
+              both: 1,
+            },
+            {
+              p: [
+                [510, 191],
+                [530, 191],
+              ],
+              both: 1,
+            },
+            {
+              p: [
+                [320, 224],
+                [320, 244],
+              ],
+              both: 1,
+            },
+          ],
+        },
+      };
     </script>
     <script>
       (function () {
@@ -2044,6 +2185,51 @@
               (n.y + n.h) +
               '"/>'
             );
+          }
+          if (n.t === "ring") {
+            // hash ring: centre (cx,cy), radius r, optional tick count + position numbers
+            var s =
+              '<circle class="ringc" cx="' +
+              n.cx +
+              '" cy="' +
+              n.cy +
+              '" r="' +
+              n.r +
+              '"/>';
+            for (var i = 0; i < (n.ticks || 0); i++) {
+              var a = ((-90 + (i * 360) / n.ticks) * Math.PI) / 180,
+                c = Math.cos(a),
+                si = Math.sin(a);
+              s +=
+                '<line class="tick" x1="' +
+                (n.cx + (n.r - 5) * c) +
+                '" y1="' +
+                (n.cy + (n.r - 5) * si) +
+                '" x2="' +
+                (n.cx + (n.r + 5) * c) +
+                '" y2="' +
+                (n.cy + (n.r + 5) * si) +
+                '"/>';
+              if (n.nums)
+                s +=
+                  '<text class="ringn" x="' +
+                  (n.cx + (n.r - 30) * c) +
+                  '" y="' +
+                  (n.cy + (n.r - 30) * si + 4) +
+                  '" text-anchor="middle">' +
+                  i +
+                  "</text>";
+            }
+            if (n.l)
+              s +=
+                '<text class="nt" x="' +
+                n.cx +
+                '" y="' +
+                (n.cy + 4) +
+                '" text-anchor="middle">' +
+                esc(n.l) +
+                "</text>";
+            return s;
           }
           var ty = n.y + n.h / 2;
           if (n.t === "db") {
@@ -2167,7 +2353,8 @@
             mbad +
             '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahb" d="M0,0 L10,5 L0,10 z"/></marker></defs>';
           d.n.forEach(function (n) {
-            if (n.t === "zone" || n.t === "line") o += node(n);
+            if (n.t === "zone" || n.t === "line" || n.t === "ring")
+              o += node(n);
           });
           (d.e || []).forEach(function (e) {
             var pts = e.p
@@ -2199,7 +2386,8 @@
             }
           });
           d.n.forEach(function (n) {
-            if (n.t !== "zone" && n.t !== "line") o += node(n);
+            if (n.t !== "zone" && n.t !== "line" && n.t !== "ring")
+              o += node(n);
           });
           (d.e || []).forEach(function (e) {
             if (e.l)

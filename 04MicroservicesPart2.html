@@ -961,8 +961,8 @@
             ><span class="star">★★</span></a
           >
           <a href="#s6"
-            ><b>CQRS</b><span>queries and joins across service databases</span
-            ><span class="star">★</span></a
+            ><b>CQRS</b
+            ><span>queries and joins across service databases</span></a
           >
         </div>
       </div>
@@ -1018,6 +1018,9 @@
           </li>
           <li>
             <a href="#s7"><span>→</span>Summary</a>
+          </li>
+          <li>
+            <a href="#extra"><span>+</span>Good to know</a>
           </li>
           <li>
             <a href="#revise"><span>?</span>Revision</a>
@@ -1547,6 +1550,409 @@
               </tbody>
             </table>
           </div>
+        </section>
+
+        <style>
+          .wf {
+            display: grid;
+            gap: 6px;
+            min-width: 520px;
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 6px 4px;
+          }
+          .wr {
+            display: grid;
+            grid-template-columns: 120px 1fr 150px;
+            align-items: center;
+            gap: 10px;
+          }
+          .wr i {
+            display: block;
+            height: 14px;
+            border-radius: 4px;
+            background: var(--c-app-s);
+            opacity: 0.8;
+          }
+          .wr i.slow {
+            background: var(--warn);
+            opacity: 1;
+          }
+          .wr em {
+            font-style: normal;
+            color: var(--muted);
+          }
+          .bloom {
+            display: flex;
+            gap: 4px;
+            font-family: var(--mono);
+            font-size: 13px;
+            padding: 6px 4px;
+            min-width: 420px;
+          }
+          .bloom span {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 6px;
+            background: var(--sunk);
+            color: var(--muted);
+          }
+          .bloom span.on {
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-weight: 600;
+          }
+        </style>
+        <section class="step" id="extra">
+          <div class="snum">
+            Beyond the course
+            <span class="flag">good to know as an engineer</span>
+          </div>
+          <h2>Good to know as an engineer</h2>
+          <p class="lede">
+            SAGA and CQRS both depend on events actually being published. These
+            patterns make that reliable, and stop one sick service from taking
+            down the rest.
+          </p>
+
+          <h3>
+            The transactional outbox
+            <span class="flag">★ the gap in most SAGA explanations</span>
+          </h3>
+          <p>
+            The hidden bug: the Order service saves the order to its DB, then
+            publishes <code>OrderCreated</code> to the broker. If it crashes
+            between the two, the order exists but no event is ever sent, and the
+            SAGA silently stalls. You can't wrap a DB write and a broker publish
+            in one transaction.
+          </p>
+          <figure>
+            <div class="dg">
+              <svg
+                viewBox="0 0 640 264"
+                role="img"
+                aria-label="Order service writes order and outbox rows in one DB transaction; a relay publishes outbox rows to a broker; an idempotent consumer reads them"
+              >
+                <defs>
+                  <marker
+                    id="ah-outbox"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="ah" d="M0,0 L10,5 L0,10 z" />
+                  </marker>
+                  <marker
+                    id="ahb-outbox"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="ahb" d="M0,0 L10,5 L0,10 z" />
+                  </marker>
+                </defs>
+                <rect
+                  class="zone"
+                  x="190"
+                  y="10"
+                  width="250"
+                  height="150"
+                  rx="12"
+                />
+                <text class="zl" x="202" y="27">ONE LOCAL DB TRANSACTION</text>
+                <polyline
+                  class="ed"
+                  points="160,58 190,58"
+                  marker-end="url(#ah-outbox)"
+                />
+                <polyline
+                  class="ed"
+                  points="375,108 375,192"
+                  marker-end="url(#ah-outbox)"
+                />
+                <polyline
+                  class="ed"
+                  points="430,204 480,152"
+                  marker-end="url(#ah-outbox)"
+                />
+                <polyline
+                  class="ed"
+                  points="555,160 555,194"
+                  marker-end="url(#ah-outbox)"
+                />
+                <rect
+                  class="n t-app"
+                  x="10"
+                  y="30"
+                  width="150"
+                  height="56"
+                  rx="9"
+                />
+                <text class="nl" x="85" y="63" text-anchor="middle">
+                  Order service
+                </text>
+                <path
+                  class="n t-db"
+                  d="M205,52 A50,8 0 0 1 305,52 V100 A50,8 0 0 1 205,100 Z"
+                />
+                <ellipse class="n t-db" cx="255" cy="52" rx="50" ry="8" />
+                <text class="nl" x="255" y="77" text-anchor="middle">
+                  orders
+                </text>
+                <text class="ns" x="255" y="92" text-anchor="middle">
+                  order row
+                </text>
+                <path
+                  class="n t-mq"
+                  d="M325,52 A50,8 0 0 1 425,52 V100 A50,8 0 0 1 325,100 Z"
+                />
+                <ellipse class="n t-mq" cx="375" cy="52" rx="50" ry="8" />
+                <text class="nl" x="375" y="77" text-anchor="middle">
+                  outbox
+                </text>
+                <text class="ns" x="375" y="92" text-anchor="middle">
+                  OrderCreated
+                </text>
+                <rect
+                  class="n t-lb"
+                  x="320"
+                  y="192"
+                  width="110"
+                  height="52"
+                  rx="9"
+                />
+                <text class="nl" x="375" y="215" text-anchor="middle">
+                  Relay / CDC
+                </text>
+                <text class="ns" x="375" y="230" text-anchor="middle">
+                  polls or tails log
+                </text>
+                <rect
+                  class="n t-mq"
+                  x="480"
+                  y="104"
+                  width="150"
+                  height="56"
+                  rx="9"
+                />
+                <text class="nl" x="555" y="137" text-anchor="middle">
+                  Message broker
+                </text>
+                <rect
+                  class="n t-app"
+                  x="480"
+                  y="194"
+                  width="150"
+                  height="52"
+                  rx="9"
+                />
+                <text class="nl" x="555" y="217" text-anchor="middle">
+                  Inventory service
+                </text>
+                <text class="ns" x="555" y="232" text-anchor="middle">
+                  idempotent consumer
+                </text>
+                <text class="el" x="384" y="178" text-anchor="start">
+                  ② read new rows
+                </text>
+                <text class="el" x="452" y="170" text-anchor="end">
+                  ③ publish
+                </text>
+                <text class="nt" x="85" y="108" text-anchor="middle">
+                  ① insert order + event
+                </text>
+                <text class="nt" x="85" y="124" text-anchor="middle">
+                  in the same transaction
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              Write the order and the event in the same local DB transaction. A
+              separate relay reads the outbox table and publishes. Nothing is
+              lost, even if the service crashes.
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              In <b>one local transaction</b>, insert the order row
+              <em>and</em> an event row into an <code>outbox</code> table.
+              Either both commit or neither does.
+            </li>
+            <li>
+              A <b>relay</b> process reads new outbox rows and publishes them to
+              the broker. It either polls the table, or uses
+              <b>change data capture</b> (CDC), for example Debezium reading the
+              DB log.
+            </li>
+            <li>After publishing, it marks the row as sent.</li>
+          </ol>
+          <p>
+            The relay may publish the same event twice (a crash after publishing
+            but before marking it), so consumers must be <b>idempotent</b>. HLD
+            lecture 13 covers that.
+          </p>
+
+          <h3>Resilience patterns: stop failures spreading</h3>
+          <figure>
+            <div class="dg">
+              <svg
+                viewBox="0 0 640 250"
+                role="img"
+                aria-label="Circuit breaker: Closed to Open when failures exceed threshold, Open to Half-open after cool-down, Half-open to Closed when trials succeed"
+              >
+                <defs>
+                  <marker
+                    id="ah-breaker"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="ah" d="M0,0 L10,5 L0,10 z" />
+                  </marker>
+                  <marker
+                    id="ahb-breaker"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path class="ahb" d="M0,0 L10,5 L0,10 z" />
+                  </marker>
+                </defs>
+                <polyline
+                  class="ed bad"
+                  points="180,98 460,98"
+                  marker-end="url(#ahb-breaker)"
+                />
+                <polyline
+                  class="ed"
+                  points="520,140 400,190"
+                  marker-end="url(#ah-breaker)"
+                />
+                <polyline
+                  class="ed good"
+                  points="240,200 110,140"
+                  marker-end="url(#ah-breaker)"
+                />
+                <rect
+                  class="n t-db"
+                  x="20"
+                  y="80"
+                  width="160"
+                  height="60"
+                  rx="9"
+                />
+                <text class="nl" x="100" y="107" text-anchor="middle">
+                  Closed
+                </text>
+                <text class="ns" x="100" y="122" text-anchor="middle">
+                  calls pass through
+                </text>
+                <rect
+                  class="n t-cache"
+                  x="460"
+                  y="80"
+                  width="160"
+                  height="60"
+                  rx="9"
+                />
+                <text class="nl" x="540" y="107" text-anchor="middle">
+                  Open
+                </text>
+                <text class="ns" x="540" y="122" text-anchor="middle">
+                  fail fast / fallback
+                </text>
+                <rect
+                  class="n t-lb"
+                  x="240"
+                  y="172"
+                  width="160"
+                  height="56"
+                  rx="9"
+                />
+                <text class="nl" x="320" y="197" text-anchor="middle">
+                  Half-open
+                </text>
+                <text class="ns" x="320" y="212" text-anchor="middle">
+                  a few trial calls
+                </text>
+                <text class="el bad" x="320" y="90" text-anchor="middle">
+                  failures exceed threshold
+                </text>
+                <text class="el" x="470" y="176" text-anchor="start">
+                  after cool-down
+                </text>
+                <text class="el" x="168" y="190" text-anchor="end">
+                  trials succeed
+                </text>
+                <text class="nt bad" x="320" y="244" text-anchor="middle">
+                  a trial call fails → back to Open
+                </text>
+              </svg>
+            </div>
+            <figcaption>
+              Circuit breaker states. After too many failures it "opens" and
+              fails fast. After a cool-down it lets a few trial requests
+              through.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Circuit breaker:</b> like a fuse. When calls to a dependency
+              keep failing, stop calling it for a while and fail fast (or return
+              a fallback) instead of piling up waiting threads. <b>Closed</b> =
+              normal. <b>Open</b> = reject immediately. <b>Half-open</b> = allow
+              a few test calls. If they succeed, close again.
+            </li>
+            <li>
+              <b>Timeouts</b> on every call, shorter than the caller's own
+              timeout.
+            </li>
+            <li>
+              <b>Retries with exponential backoff and jitter</b>, and only for
+              idempotent operations.
+            </li>
+            <li>
+              <b>Bulkhead:</b> give each dependency its own thread or connection
+              pool, like watertight compartments in a ship. If one floods, the
+              others keep working.
+            </li>
+            <li>
+              Libraries: Resilience4j (Java), Polly (.NET), or a service mesh
+              such as Istio or Linkerd, which does this at the network layer
+              without code changes.
+            </li>
+          </ul>
+
+          <h3>Migration and release hygiene</h3>
+          <ul>
+            <li>
+              <b>Feature flags:</b> the Strangler controller is often just a
+              flag with a percentage rollout (LaunchDarkly, Unleash or
+              home-grown).
+            </li>
+            <li>
+              <b>Expand–contract schema changes:</b> add the new column, write
+              to both, backfill, switch reads, then drop the old one. Never
+              break a running version.
+            </li>
+            <li>
+              <b>Contract tests</b> (for example Pact) catch "S3 changed its
+              response and broke S2" before release.
+            </li>
+          </ul>
         </section>
 
         <section class="step" id="revise">
