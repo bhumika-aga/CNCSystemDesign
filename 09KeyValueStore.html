@@ -1928,8 +1928,9 @@
               don't have the key.
             </li>
             <li>
-              Used by Cassandra, RocksDB, LevelDB and HBase, and in DynamoDB's
-              storage. Contrast with the <b>B+ tree</b> (HLD lecture 22), used
+              Used by Cassandra, RocksDB, LevelDB and HBase. (DynamoDB, the AWS
+              product, instead keeps a write-ahead log plus a B-tree on each
+              replica.) Contrast with the <b>B+ tree</b> (HLD lecture 22), used
               by most SQL databases: LSM favours <b>writes</b>, B+ trees favour
               <b>reads</b>.
             </li>

@@ -1759,7 +1759,7 @@
                 <text class="ns" x="555" y="232" text-anchor="middle">
                   idempotent consumer
                 </text>
-                <text class="el" x="384" y="178" text-anchor="start">
+                <text class="el" x="366" y="178" text-anchor="end">
                   ② read new rows
                 </text>
                 <text class="el" x="452" y="170" text-anchor="end">
@@ -2432,8 +2432,8 @@
             },
           ],
           notes: [
-            { x: 80, y: 250, l: "rolled back: order cancelled", a: "middle" },
-            { x: 320, y: 250, l: "reversed: stock added back", a: "middle" },
+            { x: 80, y: 250, l: "order → cancelled", a: "middle" },
+            { x: 320, y: 250, l: "stock → added back", a: "middle" },
             { x: 560, y: 250, l: "local txn failed", a: "middle", bad: 1 },
             {
               x: 320,
@@ -2446,7 +2446,7 @@
         },
 
         chore: {
-          h: 270,
+          h: 280,
           alt: "Choreography: services publish and listen to events on a shared broker",
           n: [
             { t: "app", x: 30, y: 20, w: 130, h: 48, l: "S1 · Order" },
@@ -2493,10 +2493,10 @@
           ],
           notes: [
             {
-              x: 420,
-              y: 236,
-              l: "no one in charge · each reacts to events",
-              a: "start",
+              x: 320,
+              y: 266,
+              l: "no one in charge · each service reacts to events",
+              a: "middle",
             },
           ],
         },
@@ -2545,8 +2545,8 @@
                 [545, 176],
               ],
               both: 1,
-              l: "③ fails → “S1, S2: roll back”",
-              at: [468, 114],
+              l: "③ fails → roll back",
+              at: [470, 114],
               a: "start",
             },
           ],

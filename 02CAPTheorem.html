@@ -1403,9 +1403,11 @@
             <ul>
               <li>
                 <b>Real databases:</b> MongoDB (default settings) and HBase lean
-                <b>CP</b>. Cassandra, DynamoDB and CouchDB lean <b>AP</b>. Many
-                let you tune this per query (for example Cassandra's consistency
-                levels, MongoDB's read and write concerns).
+                <b>CP</b>. The original Dynamo design, Cassandra and CouchDB
+                lean <b>AP</b>. DynamoDB, the AWS product, replicates through a
+                leader and offers both eventually and strongly consistent reads.
+                Many let you tune this per query (for example Cassandra's
+                consistency levels, MongoDB's read and write concerns).
               </li>
               <li>
                 A single-node relational database (one PostgreSQL server) is

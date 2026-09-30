@@ -1436,8 +1436,8 @@
                 sorted list of ring positions, so it takes O(log n).
               </li>
               <li>
-                Used by Amazon Dynamo and DynamoDB (lecture 9), Apache
-                Cassandra, Discord's chat routing and many CDNs and caches.
+                Used by Amazon Dynamo (lecture 9), Apache Cassandra, Discord's
+                chat routing and many CDNs and caches.
               </li>
               <li>
                 Consistent hashing reduces movement but doesn't stop
@@ -2218,10 +2218,12 @@
           if (n.down) {
             o +=
               '<text class="downx" x="' +
-              (n.x + n.w - 4) +
+              (n.w < 90 ? n.x + n.w / 2 : n.x + n.w - 4) +
               '" y="' +
-              (n.y + 14) +
-              '" text-anchor="end">DOWN</text>';
+              (n.w < 90 ? n.y - 4 : n.y + 14) +
+              '" text-anchor="' +
+              (n.w < 90 ? "middle" : "end") +
+              '">DOWN</text>';
           }
           return o;
         }
