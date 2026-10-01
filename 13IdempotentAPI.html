@@ -1,0 +1,2589 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Idempotent POST APIs</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+      }
+      img {
+        max-width: 100%;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #eef1f4;
+        --surface: #ffffff;
+        --sunk: #e3e8ed;
+        --ink: #15202b;
+        --muted: #56636f;
+        --rule: #d3dae1;
+        --line: #8795a2;
+        --accent: #0e7c7b;
+        --accent-soft: #d7efee;
+        --warn: #b45a12;
+        --warn-soft: #fbe9d8;
+        --c-client-f: #e7ebef;
+        --c-client-s: #56636f;
+        --c-lb-f: #ede8ff;
+        --c-lb-s: #6546d6;
+        --c-app-f: #e3ecff;
+        --c-app-s: #2d5fc4;
+        --c-db-f: #dff3e7;
+        --c-db-s: #23845a;
+        --c-cache-f: #ffe7de;
+        --c-cache-s: #c94c25;
+        --c-cdn-f: #d9f1f1;
+        --c-cdn-s: #0e8080;
+        --c-mq-f: #fff0d3;
+        --c-mq-s: #a8701a;
+        --display:
+          "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui,
+          sans-serif;
+        --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+        --mono:
+          "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          color-scheme: dark;
+          --bg: #0f151b;
+          --surface: #172029;
+          --sunk: #1d2833;
+          --ink: #e3e9ef;
+          --muted: #98a5b1;
+          --rule: #2a3643;
+          --line: #6a7988;
+          --accent: #4cc8c4;
+          --accent-soft: #12302f;
+          --warn: #f0a060;
+          --warn-soft: #35240f;
+          --c-client-f: #202a34;
+          --c-client-s: #94a2af;
+          --c-lb-f: #241e44;
+          --c-lb-s: #a48fff;
+          --c-app-f: #162844;
+          --c-app-s: #76a0ff;
+          --c-db-f: #132e1f;
+          --c-db-s: #52c68a;
+          --c-cache-f: #371c13;
+          --c-cache-s: #ff8b64;
+          --c-cdn-f: #0f2f2f;
+          --c-cdn-s: #41c9c9;
+          --c-mq-f: #36290e;
+          --c-mq-s: #e7ab48;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0f151b;
+        --surface: #172029;
+        --sunk: #1d2833;
+        --ink: #e3e9ef;
+        --muted: #98a5b1;
+        --rule: #2a3643;
+        --line: #6a7988;
+        --accent: #4cc8c4;
+        --accent-soft: #12302f;
+        --warn: #f0a060;
+        --warn-soft: #35240f;
+        --c-client-f: #202a34;
+        --c-client-s: #94a2af;
+        --c-lb-f: #241e44;
+        --c-lb-s: #a48fff;
+        --c-app-f: #162844;
+        --c-app-s: #76a0ff;
+        --c-db-f: #132e1f;
+        --c-db-s: #52c68a;
+        --c-cache-f: #371c13;
+        --c-cache-s: #ff8b64;
+        --c-cdn-f: #0f2f2f;
+        --c-cdn-s: #41c9c9;
+        --c-mq-f: #36290e;
+        --c-mq-s: #e7ab48;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 17px;
+        line-height: 1.62;
+        padding-inline: 20px;
+        padding-block: 0 64px;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--display);
+        line-height: 1.12;
+        text-wrap: balance;
+        margin: 0;
+      }
+      h2 {
+        font-size: clamp(28px, 4.2vw, 38px);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      h3 {
+        font-size: 19px;
+        font-weight: 700;
+        margin-top: 28px;
+        margin-bottom: 6px;
+      }
+      p {
+        margin: 0 0 12px;
+      }
+      ul,
+      ol {
+        margin: 0 0 12px;
+        padding-left: 22px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      li::marker {
+        color: var(--muted);
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.84em;
+      }
+      code {
+        background: var(--sunk);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      b,
+      strong {
+        font-weight: 600;
+      }
+
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 56px;
+      }
+      @media (max-width: 960px) {
+        .wrap {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .rail {
+          display: none;
+        }
+      }
+
+      /* hero */
+      .hero {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-block: 48px 28px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 40px;
+        align-items: end;
+      }
+      @media (max-width: 860px) {
+        .hero {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 20px;
+        }
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: clamp(44px, 7.4vw, 84px);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 0.95;
+      }
+      h1 .big {
+        color: var(--accent);
+      }
+      .hero .intro {
+        font-size: 18px;
+        margin-top: 18px;
+        max-width: 34em;
+        color: var(--ink);
+      }
+      .stairs {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .stairs text {
+        font-family: var(--mono);
+      }
+      .stairs .st {
+        fill: var(--sunk);
+        stroke: var(--rule);
+      }
+      .stairs a:hover .st,
+      .stairs a:focus .st {
+        fill: var(--accent-soft);
+        stroke: var(--accent);
+      }
+      .stairs .sn {
+        font-size: 13px;
+        font-weight: 600;
+        fill: var(--ink);
+      }
+      .stairs .sl {
+        font-size: 11.5px;
+        fill: var(--muted);
+      }
+      .stairs .star {
+        font-size: 13px;
+        fill: var(--warn);
+      }
+      .stairs .cap {
+        font-size: 11px;
+        fill: var(--muted);
+      }
+
+      .legend {
+        max-width: 1120px;
+        margin: 0 auto 36px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        align-items: center;
+        border-top: 1px solid var(--rule);
+        padding-top: 16px;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid;
+        vertical-align: -2px;
+        margin-right: 6px;
+      }
+
+      /* rail */
+      .rail {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        align-self: start;
+        padding-top: 8px;
+        max-height: 100vh;
+        overflow: auto;
+      }
+      .rail ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-family: var(--display);
+        font-size: 15px;
+      }
+      .rail li {
+        margin: 0;
+      }
+      .rail a {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 6px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        color: var(--muted);
+        text-decoration: none;
+        line-height: 1.3;
+      }
+      .rail a span {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding-top: 2px;
+      }
+      .rail a:hover {
+        background: var(--sunk);
+        color: var(--ink);
+      }
+      .rail a.on {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      .rail .head {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px 8px;
+      }
+
+      main {
+        min-width: 0;
+      }
+      .step {
+        padding-block: 40px;
+        border-top: 1px solid var(--rule);
+      }
+      .step:first-child {
+        border-top: 0;
+        padding-top: 4px;
+      }
+      .step > * {
+        max-width: 720px;
+      }
+      .step > figure {
+        max-width: 760px;
+      }
+      .snum {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .flag {
+        color: var(--warn);
+        background: var(--warn-soft);
+        padding: 2px 8px;
+        border-radius: 99px;
+        letter-spacing: 0.02em;
+        text-transform: none;
+      }
+      .lede {
+        font-size: 19px;
+        margin-top: 12px;
+        color: var(--ink);
+      }
+
+      .eli5 {
+        background: var(--accent-soft);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 22px 0;
+      }
+      .eli5 p:last-child {
+        margin-bottom: 0;
+      }
+      .tag {
+        display: block;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+      .beyond {
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 24px 0 8px;
+      }
+      .beyond .tag {
+        color: var(--muted);
+      }
+      .beyond ul:last-child,
+      .beyond p:last-child {
+        margin-bottom: 0;
+      }
+      .handoff {
+        margin-top: 22px;
+        font-family: var(--display);
+        font-size: 16px;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .handoff b {
+        color: var(--warn);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      figure {
+        margin: 22px 0;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 16px 12px 10px;
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      figcaption {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        padding: 8px 8px 2px;
+        line-height: 1.5;
+      }
+      .dg {
+        overflow-x: auto;
+      }
+      .dg svg {
+        display: block;
+        width: 100%;
+        min-width: 540px;
+        max-width: 680px;
+        margin: 0 auto;
+        height: auto;
+      }
+      svg .n {
+        stroke-width: 1.6;
+      }
+      svg .t-client {
+        fill: var(--c-client-f);
+        stroke: var(--c-client-s);
+      }
+      svg .t-lb {
+        fill: var(--c-lb-f);
+        stroke: var(--c-lb-s);
+      }
+      svg .t-app {
+        fill: var(--c-app-f);
+        stroke: var(--c-app-s);
+      }
+      svg .t-db {
+        fill: var(--c-db-f);
+        stroke: var(--c-db-s);
+      }
+      svg .t-cache {
+        fill: var(--c-cache-f);
+        stroke: var(--c-cache-s);
+      }
+      svg .t-cdn {
+        fill: var(--c-cdn-f);
+        stroke: var(--c-cdn-s);
+      }
+      svg .t-mq {
+        fill: var(--c-mq-f);
+        stroke: var(--c-mq-s);
+      }
+      svg .slot {
+        fill: var(--surface);
+        stroke: var(--c-mq-s);
+        stroke-width: 1.2;
+      }
+      svg .zone {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.3;
+        stroke-dasharray: 5 5;
+      }
+      svg .zl {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        fill: var(--muted);
+      }
+      svg .nl {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 13.5px;
+        fill: var(--ink);
+      }
+      svg .ns {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg .nt {
+        font-family: var(--mono);
+        font-size: 11px;
+        fill: var(--muted);
+      }
+      svg .ed {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.6;
+      }
+      svg .ed.dash {
+        stroke-dasharray: 5 4;
+      }
+      svg .ah {
+        fill: var(--line);
+      }
+      svg .el {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--ink);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 5px;
+        stroke-linejoin: round;
+      }
+
+      /* latency bars */
+      .lat {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px 12px;
+        align-items: center;
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 6px 8px 4px;
+      }
+      .lat .bar {
+        height: 14px;
+        border-radius: 4px;
+        background: var(--c-cdn-s);
+        opacity: 0.85;
+      }
+      .lat .v {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+
+      /* sharding tables */
+      .shard {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        justify-content: center;
+        padding: 8px 4px;
+      }
+      .tbl {
+        display: grid;
+        border: 1.5px solid var(--c-db-s);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--c-db-f);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .tbl div {
+        padding: 3px 8px;
+        border-top: 1px solid var(--rule);
+        white-space: nowrap;
+      }
+      .tbl div.h {
+        border-top: 0;
+        font-weight: 600;
+        background: var(--surface);
+        color: var(--ink);
+      }
+      .tbl .dim {
+        color: var(--muted);
+      }
+      .arrow {
+        font-family: var(--display);
+        font-size: 26px;
+        color: var(--line);
+      }
+      .tname {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      /* exchange cards */
+      .xgrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      @media (max-width: 620px) {
+        .xgrid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .x {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .x h4 {
+        font-family: var(--display);
+        font-size: 17px;
+        margin: 0 0 4px;
+      }
+      .x .rule {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--c-mq-s);
+        margin-bottom: 6px;
+      }
+      .x p {
+        font-size: 15.5px;
+        margin: 0;
+      }
+      .x .src {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-top: 8px;
+      }
+
+      /* compare table */
+      .tw {
+        overflow-x: auto;
+        margin: 16px 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 15px;
+        min-width: 560px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+      th {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td:first-child {
+        font-family: var(--display);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      /* quiz */
+      details {
+        border-top: 1px solid var(--rule);
+        padding: 12px 0;
+      }
+      details:last-of-type {
+        border-bottom: 1px solid var(--rule);
+      }
+      summary {
+        cursor: pointer;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 17px;
+        list-style: none;
+        display: flex;
+        gap: 10px;
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::before {
+        content: "+";
+        font-family: var(--mono);
+        color: var(--accent);
+        width: 14px;
+        flex: none;
+      }
+      details[open] summary::before {
+        content: "–";
+      }
+      details p {
+        margin: 8px 0 0 24px;
+      }
+
+      .sources {
+        font-size: 15px;
+      }
+      .sources li {
+        margin-bottom: 4px;
+      }
+      .foot {
+        max-width: 720px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 28px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .rail a {
+          transition: background 0.15s;
+        }
+      }
+
+      /* ── additions shared by lectures 1–4 ── */
+      svg .n.down {
+        opacity: 0.5;
+        stroke-dasharray: 4 3;
+      }
+      svg .downx {
+        font-family: var(--mono);
+        font-size: 9.5px;
+        font-weight: 600;
+        fill: var(--warn);
+        letter-spacing: 0.06em;
+      }
+      svg .ed.bad {
+        stroke: var(--warn);
+      }
+      svg .ed.good {
+        stroke: var(--accent);
+      }
+      svg .ahb {
+        fill: var(--warn);
+      }
+      svg .el.bad,
+      svg .nt.bad {
+        fill: var(--warn);
+      }
+      svg .nt.strong {
+        fill: var(--ink);
+        font-weight: 600;
+      }
+      svg .cutx {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 18px;
+        fill: var(--warn);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 5px;
+      }
+      svg .zone.bad {
+        stroke: var(--warn);
+      }
+      svg .zl.bad {
+        fill: var(--warn);
+      }
+      svg .life {
+        stroke: var(--line);
+        stroke-width: 1.4;
+      }
+      svg .ringc {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 10;
+        stroke-opacity: 0.28;
+      }
+      svg .tick {
+        stroke: var(--line);
+        stroke-width: 1.2;
+      }
+      svg .ringn {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg circle.n {
+        stroke-width: 1.6;
+      }
+
+      /* worked calculations */
+      .calc {
+        font-family: var(--mono);
+        font-size: 13.5px;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 16px 0;
+        overflow-x: auto;
+        line-height: 1.75;
+        font-variant-numeric: tabular-nums;
+      }
+      .calc .c {
+        color: var(--muted);
+      }
+      .calc b {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+      @media (max-width: 720px) {
+        .tiles {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .tile {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .tile b {
+        display: block;
+        font-family: var(--display);
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      .tile span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+      }
+
+      /* bit layout */
+      .bits {
+        display: flex;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1.5px solid var(--c-lb-s);
+        font-family: var(--mono);
+        font-size: 12px;
+        min-width: 520px;
+      }
+      .bits div {
+        padding: 10px 8px;
+        text-align: center;
+        border-left: 1px solid var(--c-lb-s);
+        background: var(--c-lb-f);
+      }
+      .bits div:first-child {
+        border-left: 0;
+        background: var(--sunk);
+      }
+      .bits b {
+        display: block;
+        font-family: var(--display);
+        font-size: 14px;
+      }
+      .code {
+        font-family: var(--mono);
+        font-size: 13px;
+        background: var(--sunk);
+        border-radius: 10px;
+        padding: 12px 14px;
+        overflow-x: auto;
+        white-space: pre;
+        line-height: 1.6;
+      }
+
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .side .cap {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* OSI-style stack */
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-width: 460px;
+      }
+      .stack a,
+      .stack div {
+        display: grid;
+        grid-template-columns: 34px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        border-radius: 10px;
+        background: var(--sunk);
+        color: var(--muted);
+        text-decoration: none;
+        font-family: var(--display);
+        font-size: 15px;
+      }
+      .stack .no {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .stack .ex {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .stack .hot {
+        background: var(--accent-soft);
+        color: var(--ink);
+        box-shadow: inset 0 0 0 1.5px var(--accent);
+        font-weight: 700;
+      }
+      .stack .hot .ex {
+        color: var(--accent);
+      }
+
+      /* pattern cards in hero */
+      .pgrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      @media (max-width: 520px) {
+        .pgrid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .pgrid a {
+        display: block;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px;
+        text-decoration: none;
+        color: var(--ink);
+      }
+      .pgrid a:hover {
+        border-color: var(--accent);
+      }
+      .pgrid b {
+        display: block;
+        font-family: var(--display);
+        font-size: 20px;
+        font-weight: 800;
+      }
+      .pgrid span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+        line-height: 1.45;
+      }
+      .pgrid .star {
+        color: var(--warn);
+      }
+
+      /* verdict pills in tables */
+      .pill {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 99px;
+        white-space: nowrap;
+      }
+      .pill.yes {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .pill.no {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      td .mono {
+        font-size: 13px;
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      @media (max-width: 620px) {
+        .two {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .two .x ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-size: 15.5px;
+      }
+      .two .x li {
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">HLD lecture 13 · study notes</div>
+        <h1>Idempotent <span class="big">POST</span> APIs</h1>
+        <p class="intro">
+          Networks time out and users double-click, so the same request often
+          arrives twice. For "add to cart" or "pay ₹10" that means two items or
+          two payments. An idempotency handler makes retries safe: however many
+          times a request arrives, it takes effect only once.
+        </p>
+      </div>
+      <div class="side">
+        <span class="cap">Same key, same result</span>
+        <div class="dg"><div class="dg" data-d="hero"></div></div>
+      </div>
+    </header>
+
+    <div class="legend" aria-label="Diagram colour key">
+      <span>Colour key:</span>
+      <span
+        ><i
+          style="background: var(--c-client-f); border-color: var(--c-client-s)"
+        ></i
+        >Client</span
+      >
+      <span
+        ><i style="background: var(--c-app-f); border-color: var(--c-app-s)"></i
+        >Server / step</span
+      >
+      <span
+        ><i style="background: var(--c-lb-f); border-color: var(--c-lb-s)"></i
+        >Decision / lock</span
+      >
+      <span
+        ><i style="background: var(--c-db-f); border-color: var(--c-db-s)"></i
+        >Database / success</span
+      >
+      <span
+        ><i
+          style="background: var(--c-cache-f); border-color: var(--c-cache-s)"
+        ></i
+        >Error / duplicate</span
+      >
+    </div>
+
+    <div class="wrap">
+      <nav class="rail" aria-label="Sections">
+        <p class="head">In this lecture</p>
+        <ol id="rail">
+          <li>
+            <a href="#s1"><span>01</span>Idempotency vs concurrency</a>
+          </li>
+          <li>
+            <a href="#s2"><span>02</span>What idempotency means</a>
+          </li>
+          <li>
+            <a href="#s3"><span>03</span>Which HTTP methods</a>
+          </li>
+          <li>
+            <a href="#s4"><span>04</span>How duplicates happen</a>
+          </li>
+          <li>
+            <a href="#s5"><span>05</span>The idempotency key</a>
+          </li>
+          <li>
+            <a href="#s6"><span>06</span>The full flow</a>
+          </li>
+          <li>
+            <a href="#s7"><span>07</span>Parallel duplicates</a>
+          </li>
+          <li>
+            <a href="#s8"><span>08</span>Many servers</a>
+          </li>
+          <li>
+            <a href="#extra"><span>+</span>Good to know</a>
+          </li>
+          <li>
+            <a href="#revise"><span>?</span>Revision</a>
+          </li>
+        </ol>
+      </nav>
+
+      <main>
+        <section class="step" id="s1">
+          <div class="snum">
+            Don't mix these up
+            <span class="flag">★ asked at top product companies</span>
+          </div>
+          <h2>Idempotency vs concurrency</h2>
+          <figure>
+            <div class="dg" data-d="vs"></div>
+            <figcaption>
+              Left: many users want one resource (concurrency). Right: one
+              client sends the same request several times (idempotency).
+            </figcaption>
+          </figure>
+          <div class="two">
+            <div class="x">
+              <h4>Concurrency</h4>
+              <p>
+                <b>Many users, one resource.</b> Example: on BookMyShow, many
+                people try to book the same seat at once. Who gets it? That's a
+                concurrency problem, covered in later lectures (24–28).
+              </p>
+            </div>
+            <div class="x">
+              <h4>Idempotency</h4>
+              <p>
+                <b>One client, the same request repeated.</b> Example: "add to
+                cart" sent twice because of a retry. It should add the item
+                once. That's this lecture.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="step" id="s2">
+          <div class="snum">Definition</div>
+          <h2>What idempotency means</h2>
+          <p class="lede">
+            Idempotency lets a client <b>safely retry</b> an operation as many
+            times as it likes, <b>without worrying about side effects</b>. The
+            first request does the work, and every repeat changes nothing.
+          </p>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A lift button. Press it once and the lift is called. Press it ten
+              more times and it doesn't send ten lifts. That's idempotent. A
+              vending machine coin slot is not: insert the coin twice and you've
+              paid twice.
+            </p>
+          </div>
+          <p>
+            Example: "add item to cart" creates a row saying Shreyansh added
+            this item. If the request is retried, it must
+            <b>not create a second row</b>. However many retries, the database
+            holds exactly one.
+          </p>
+        </section>
+
+        <section class="step" id="s3">
+          <div class="snum">HTTP methods</div>
+          <h2>GET, PUT and DELETE already are. POST isn't.</h2>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Repeat it 5 times…</th>
+                  <th>Idempotent?</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>GET</td>
+                  <td>
+                    Just reads data. No change to the DB, however many times.
+                  </td>
+                  <td><span class="pill yes">yes, by nature</span></td>
+                </tr>
+                <tr>
+                  <td>PUT</td>
+                  <td>
+                    "Update name SJ → Shreyansh". The first call changes it, and
+                    repeats find it already "Shreyansh". Same final state.
+                  </td>
+                  <td><span class="pill yes">yes, by nature</span></td>
+                </tr>
+                <tr>
+                  <td>DELETE</td>
+                  <td>Deleting something already deleted leaves it deleted.</td>
+                  <td><span class="pill yes">yes, by nature</span></td>
+                </tr>
+                <tr>
+                  <td>POST</td>
+                  <td>
+                    "SJ pays Hardik ₹10". Each call
+                    <b>creates a new payment</b>: −₹10, −₹10, −₹10…
+                  </td>
+                  <td><span class="pill no">no, we must make it so</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            POST creates a new resource every time, so duplicates cause real
+            damage: multiple payments, or the same item added to the cart
+            several times. <b>Only POST APIs need an idempotency handler.</b>
+          </p>
+        </section>
+
+        <section class="step" id="s4">
+          <div class="snum">The two ways duplicates arrive</div>
+          <h2>Sequential and parallel duplicates</h2>
+          <h3>1 · Sequential: timeout, then retry</h3>
+          <figure>
+            <div class="dg" data-d="seq"></div>
+            <figcaption>
+              The client gives up waiting and retries, but the server had
+              already finished the first request. The retry is a duplicate.
+            </figcaption>
+          </figure>
+          <p>
+            The client sends POST "add item to cart". The server starts
+            processing but takes too long, so the client <b>times out</b>. The
+            server <b>finishes anyway</b> and the item is added. The client
+            thinks it failed and <b>retries</b>, sending a duplicate request.
+          </p>
+          <h3>2 · Parallel: two copies at the same moment</h3>
+          <figure>
+            <div class="dg" data-d="par"></div>
+            <figcaption>
+              The original and the duplicate arrive at the same time, perhaps
+              from two browser tabs, possibly at two different servers.
+            </figcaption>
+          </figure>
+          <p>
+            Two identical POSTs arrive <b>at the same time</b> (two browser
+            tabs, a double tap), maybe even on different machines. Only one must
+            be processed.
+          </p>
+        </section>
+
+        <section class="step" id="s5">
+          <div class="snum">The approach</div>
+          <h2>The idempotency key</h2>
+          <p class="lede">
+            Attach a <b>unique ID</b> to each operation, usually a
+            <b>UUID</b> (universally unique identifier). Retries reuse the same
+            ID, so the server can recognise "I've seen this one before."
+          </p>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A cheque number. If the bank sees cheque #4417 twice, it knows the
+              second one is a copy and doesn't pay it again, however many times
+              it's presented.
+            </p>
+          </div>
+          <h3>The two agreements with the client</h3>
+          <ol>
+            <li>
+              <b>The client generates the idempotency key.</b> Usually a UUID
+              from a library, sometimes combined with the operation name or a
+              timestamp for extra uniqueness.
+            </li>
+            <li>
+              <b>Each different operation gets a new key.</b> A retry of the
+              same operation reuses its key. A genuinely new "add to cart" gets
+              a fresh one.
+            </li>
+          </ol>
+          <h3>The key's lifecycle</h3>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>created (or acquired)</td>
+                  <td>
+                    A request with this key has started but isn't finished yet.
+                  </td>
+                </tr>
+                <tr>
+                  <td>consumed (or claimed)</td>
+                  <td>
+                    The operation succeeded and the resource exists. The key
+                    can't be reused.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="step" id="s6">
+          <div class="snum">
+            The flow <span class="flag">★ draw this in the interview</span>
+          </div>
+          <h2>Handling every request, step by step</h2>
+          <figure>
+            <div class="dg" data-d="flow"></div>
+            <figcaption>
+              The server validates the header, looks the key up, and either does
+              the work (201), reports it's already done (200), says it's still
+              in progress (409), or rejects a missing key (400).
+            </figcaption>
+          </figure>
+          <ol>
+            <li>
+              The <b>client generates</b> an idempotency key, say
+              <code>IK1</code>.
+            </li>
+            <li>
+              The client <b>puts it in the request header</b> and calls the
+              server: <code>POST /cart/items</code> with header
+              <code>IK1</code>.
+            </li>
+            <li>
+              The server <b>validates</b>: is there a key in the header? No →
+              <b>HTTP 400</b> (validation error).
+            </li>
+            <li>The server <b>reads the key from the DB</b>.</li>
+            <li>
+              <b>Not found</b> (first time): insert
+              <code>IK1 | created</code>.<br />
+              <b>Found</b> (a duplicate): check its status.
+              <ul>
+                <li>
+                  <b>consumed</b>: the original already finished, so return
+                  <b>HTTP 200</b>. The request succeeded earlier and nothing new
+                  is created.
+                </li>
+                <li>
+                  <b>created</b>: the original is still running, so return
+                  <b>HTTP 409 Conflict</b>, meaning "already in progress, retry
+                  later".
+                </li>
+              </ul>
+            </li>
+            <li>
+              If the operation succeeds (item added), change the key's status to
+              <b>consumed</b> and return <b>HTTP 201 Created</b>.
+            </li>
+          </ol>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Response</th>
+                  <th>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">201 Created</td>
+                  <td>
+                    First request with this key, operation succeeded, resource
+                    created.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="mono">200 OK</td>
+                  <td>
+                    Duplicate. The original already completed, so no new
+                    resource.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="mono">409 Conflict</td>
+                  <td>
+                    Duplicate while the original is still processing. Retry
+                    later.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="mono">400 Bad Request</td>
+                  <td>No idempotency key in the header.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            In the <b>timeout-and-retry</b> case, the server finished the
+            original (status consumed) even though the client never saw the 201.
+            The retry carries the same <code>IK1</code>, finds it consumed, and
+            gets <b>200</b>. No second item is added.
+          </p>
+        </section>
+
+        <section class="step" id="s7">
+          <div class="snum">Follow-up 1</div>
+          <h2>Two duplicates at the exact same moment</h2>
+          <p class="lede">
+            With two parallel requests carrying the same key, both can read the
+            DB <em>before</em> either has inserted. Both see "not found", both
+            insert, both do the work, and you get two items and two 201s.
+          </p>
+          <figure>
+            <div class="dg" data-d="mutex"></div>
+            <figcaption>
+              Make "read the key, insert if missing" a critical section. A lock
+              lets only one request in at a time, so the second sees the key the
+              first inserted.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              The <b>critical section</b> is steps 4–5: read the key, and insert
+              it if missing.
+            </li>
+            <li>
+              Protect it with <b>mutual exclusion</b>, for example a mutex,
+              semaphore or <code>synchronized</code> block: acquire the lock, do
+              the check and insert, then release.
+            </li>
+            <li>
+              Request 1 gets in first and inserts <code>IK1 | created</code>,
+              then continues. Request 2 waits, then finds the key: <b>409</b> if
+              R1 is still working, <b>200</b> if it's done.
+            </li>
+          </ul>
+        </section>
+
+        <section class="step" id="s8">
+          <div class="snum">Follow-up 2</div>
+          <h2>Duplicates landing on different servers and databases</h2>
+          <figure>
+            <div class="dg" data-d="multi"></div>
+            <figcaption>
+              Two copies hit servers in different clusters, each with its own
+              DB. DB replication is slow, so check and lock keys in a shared
+              cache instead.
+            </figcaption>
+          </figure>
+          <p>
+            If the two copies go to different servers in different clusters,
+            each with <b>its own database</b>, the DBs only sync with each other
+            slowly (the lecture says it can take minutes). Neither server can
+            trust its local DB to know about the other's key.
+          </p>
+          <p>
+            The lecture's answer: keep the keys and the lock in a <b>cache</b>,
+            because cache synchronisation is far faster than DB synchronisation
+            (near real time, in milliseconds).
+          </p>
+        </section>
+
+        <section class="step" id="extra">
+          <div class="snum">
+            Beyond the course
+            <span class="flag">good to know as an engineer</span>
+          </div>
+          <h2>Good to know as an engineer</h2>
+          <h3>Use an atomic "insert if absent", not just an in-process lock</h3>
+          <p>
+            A mutex or <code>synchronized</code> block only protects requests on
+            <b>one server</b>. With many servers, make the check and insert a
+            single atomic operation in the shared store:
+          </p>
+          <ul>
+            <li>
+              <b>SQL:</b> a <code>UNIQUE</code> constraint on the key column,
+              then <code>INSERT … ON CONFLICT DO NOTHING</code>. If 0 rows were
+              inserted, it's a duplicate.
+            </li>
+            <li>
+              <b>Redis:</b> <code>SET ik:IK1 created NX EX 86400</code>.
+              <code>NX</code> means "only if it doesn't exist", which is the
+              lock and the insert in one step.
+            </li>
+          </ul>
+          <p>
+            On the lecture's cache answer: caches in
+            <em>different regions</em> also replicate asynchronously. In
+            practice, send every key to one authoritative store (one primary
+            Redis or DB for that key, often chosen by hashing the key) rather
+            than relying on fast replication.
+          </p>
+          <h3>Replay the original response</h3>
+          <p>
+            Store the original <b>response</b> (status and body) alongside the
+            key. A duplicate then gets back exactly what the first request got:
+            the same order ID, the same 201. Stripe does this: a retry with the
+            same key returns the saved result instead of charging again.
+          </p>
+          <h3>Same key, different body is a client bug</h3>
+          <p>
+            Also store a hash of the request body. If a request reuses a key
+            with a <b>different</b> payload, reject it. The IETF draft for the
+            <code>Idempotency-Key</code> header suggests <b>422</b> for that
+            case, and <b>409</b> while the original is still being processed,
+            which matches the lecture.
+          </p>
+          <h3>Keys expire</h3>
+          <p>
+            Keys shouldn't live forever. Stripe keeps them for at least
+            <b>24 hours</b>. After pruning, the same key is treated as a new
+            request. Give your keys a TTL that covers any realistic retry
+            window.
+          </p>
+          <h3>What if the operation fails?</h3>
+          <p>
+            Decide what a failure does to the key. Usually, delete the
+            <code>created</code> entry (or mark it <code>failed</code>) on a
+            retryable error, so the client can retry with the same key. For a
+            permanent error, store the error response so retries get the same
+            answer.
+          </p>
+          <h3>Idempotent consumers</h3>
+          <p>
+            The same idea protects message consumers. Queues deliver
+            <b>at least once</b> (lecture 5), so a consumer records each
+            processed message ID and skips repeats. It's also why SAGA steps and
+            outbox relays must be idempotent (lecture 4).
+          </p>
+        </section>
+
+        <section class="step" id="revise">
+          <div class="snum">Check yourself</div>
+          <h2>Revision questions</h2>
+          <p class="lede">Try answering out loud before opening each one.</p>
+          <details>
+            <summary>Idempotency vs concurrency?</summary>
+            <p>
+              Concurrency is many users competing for one resource, like a movie
+              seat. Idempotency is the same client sending the same request more
+              than once, which should take effect once.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Which HTTP methods are idempotent by nature, and why isn't POST?
+            </summary>
+            <p>
+              GET, PUT and DELETE: repeating them leaves the same state. POST
+              creates a new resource every call, so duplicates create duplicate
+              payments or items.
+            </p>
+          </details>
+          <details>
+            <summary>Two ways duplicates happen?</summary>
+            <p>
+              Sequential: the client times out and retries, though the server
+              already finished. Parallel: two identical requests arrive at the
+              same moment.
+            </p>
+          </details>
+          <details>
+            <summary>The two agreements with the client?</summary>
+            <p>
+              The client generates the idempotency key (a UUID), and every
+              different operation gets a new key. Retries reuse the same key.
+            </p>
+          </details>
+          <details>
+            <summary>Walk through the server's response codes.</summary>
+            <p>
+              No key in the header gives 400. Key not in the DB: insert it as
+              created, do the work, mark it consumed, and return 201. Key found
+              and consumed gives 200. Key found and still created gives 409
+              Conflict.
+            </p>
+          </details>
+          <details>
+            <summary>
+              How do you stop two parallel duplicates both getting through?
+            </summary>
+            <p>
+              Make "read the key, insert if missing" a critical section with
+              mutual exclusion (a lock or mutex). In a multi-server system, make
+              it an atomic insert-if-absent in a shared store.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Duplicates hit different clusters with separate DBs. Then what?
+            </summary>
+            <p>
+              The lecture's answer: keep the keys and lock in a cache, which
+              syncs much faster than DBs. In practice, route each key to one
+              authoritative store.
+            </p>
+          </details>
+
+          <h3>Sources used to expand these notes</h3>
+          <ul class="sources">
+            <li>
+              <a
+                href="https://docs.stripe.com/api/idempotent_requests"
+                target="_blank"
+                rel="noopener"
+                >Stripe API docs: Idempotent requests</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://datatracker.ietf.org/doc/html/draft-ietf-httpapi-idempotency-key-header-07"
+                target="_blank"
+                rel="noopener"
+                >IETF draft: The Idempotency-Key HTTP header field</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://newsletter.systemdesign.one/p/idempotent-api"
+                target="_blank"
+                rel="noopener"
+                >System Design Newsletter: How Stripe prevents double payment</a
+              >
+            </li>
+          </ul>
+          <p class="foot">
+            Built from the lecture's audio transcript and whiteboard frames (37
+            min). Sections marked "Good to know" come from outside the video.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      window.DIAGRAMS = {
+        hero: {
+          h: 200,
+          alt: "The client sends the same request twice with key IK1; the first gets 201 and adds the item, the second gets 200 and adds nothing",
+          n: [
+            {
+              t: "client",
+              x: 10,
+              y: 70,
+              w: 120,
+              h: 56,
+              l: "Client",
+              s: "key IK1",
+            },
+            {
+              t: "app",
+              x: 250,
+              y: 64,
+              w: 140,
+              h: 68,
+              l: "Server",
+              s: "idempotency handler",
+            },
+            { t: "db", x: 500, y: 20, w: 130, h: 60, l: "Cart", s: "1 item" },
+            {
+              t: "cache",
+              x: 500,
+              y: 122,
+              w: 130,
+              h: 52,
+              l: "Repeat",
+              s: "nothing added",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [130, 88],
+                [250, 88],
+              ],
+              l: "POST · IK1",
+              at: [190, 80],
+            },
+            {
+              p: [
+                [130, 112],
+                [250, 112],
+              ],
+              dash: 1,
+              l: "retry · IK1",
+              at: [190, 130],
+            },
+            {
+              p: [
+                [390, 84],
+                [500, 50],
+              ],
+              good: 1,
+              l: "201",
+              at: [445, 58],
+            },
+            {
+              p: [
+                [390, 112],
+                [500, 148],
+              ],
+              l: "200",
+              at: [445, 142],
+            },
+          ],
+        },
+
+        vs: {
+          h: 250,
+          alt: "Left: four users all want one seat. Right: one client sends the same request three times, and only one row is created.",
+          n: [
+            { t: "zone", x: 6, y: 8, w: 300, h: 234, l: "CONCURRENCY" },
+            { t: "client", x: 22, y: 40, w: 70, h: 36, l: "U1" },
+            { t: "client", x: 220, y: 40, w: 70, h: 36, l: "U2" },
+            { t: "client", x: 22, y: 190, w: 70, h: 36, l: "U3" },
+            { t: "client", x: 220, y: 190, w: 70, h: 36, l: "U4" },
+            {
+              t: "db",
+              x: 106,
+              y: 104,
+              w: 100,
+              h: 62,
+              l: "Seat A1",
+              s: "one resource",
+            },
+            { t: "zone", x: 334, y: 8, w: 300, h: 234, l: "IDEMPOTENCY" },
+            { t: "client", x: 350, y: 104, w: 90, h: 56, l: "Client" },
+            {
+              t: "db",
+              x: 510,
+              y: 100,
+              w: 110,
+              h: 64,
+              l: "Cart",
+              s: "exactly 1 row",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [92, 58],
+                [130, 104],
+              ],
+            },
+            {
+              p: [
+                [220, 58],
+                [182, 104],
+              ],
+            },
+            {
+              p: [
+                [92, 208],
+                [130, 166],
+              ],
+            },
+            {
+              p: [
+                [220, 208],
+                [182, 166],
+              ],
+            },
+            {
+              p: [
+                [440, 116],
+                [510, 116],
+              ],
+              l: "add",
+              at: [475, 108],
+            },
+            {
+              p: [
+                [440, 132],
+                [510, 132],
+              ],
+              dash: 1,
+            },
+            {
+              p: [
+                [440, 148],
+                [510, 148],
+              ],
+              dash: 1,
+              l: "retries",
+              at: [475, 166],
+            },
+          ],
+        },
+
+        seq: {
+          h: 280,
+          alt: "Sequence: the client posts, the server keeps processing, the client times out and retries, and the server had already finished",
+          n: [
+            { t: "client", x: 60, y: 8, w: 120, h: 36, l: "Client" },
+            { t: "app", x: 460, y: 8, w: 120, h: 36, l: "Server" },
+            { t: "line", x: 120, y: 44, w: 0, h: 226 },
+            { t: "line", x: 520, y: 44, w: 0, h: 226 },
+            { t: "zone", x: 500, y: 74, w: 40, h: 96 },
+          ],
+          e: [
+            {
+              p: [
+                [120, 70],
+                [520, 76],
+              ],
+              l: "POST add item · IK1",
+              at: [320, 66],
+            },
+            {
+              p: [
+                [520, 150],
+                [120, 150],
+              ],
+              bad: 1,
+              dash: 1,
+              noarrow: 1,
+              cut: [320, 150],
+              l: "client times out",
+              at: [320, 174],
+            },
+            {
+              p: [
+                [120, 210],
+                [520, 216],
+              ],
+              bad: 1,
+              l: "retry: same POST · IK1 (duplicate)",
+              at: [320, 206],
+            },
+          ],
+          notes: [
+            { x: 490, y: 118, l: "still processing…", a: "end" },
+            { x: 490, y: 134, l: "item added ✓", a: "end", strong: 1 },
+          ],
+        },
+
+        par: {
+          h: 190,
+          alt: "Two identical POST requests arrive at the same moment, possibly at two different servers",
+          n: [
+            {
+              t: "client",
+              x: 10,
+              y: 60,
+              w: 120,
+              h: 60,
+              l: "Client",
+              s: "2 tabs / double tap",
+            },
+            { t: "app", x: 420, y: 20, w: 180, h: 50, l: "Server 1" },
+            { t: "app", x: 420, y: 110, w: 180, h: 50, l: "Server 2" },
+          ],
+          e: [
+            {
+              p: [
+                [130, 78],
+                [420, 46],
+              ],
+              l: "original POST · IK1",
+              at: [270, 52],
+            },
+            {
+              p: [
+                [130, 102],
+                [420, 134],
+              ],
+              bad: 1,
+              l: "duplicate POST · IK1",
+              at: [270, 142],
+            },
+          ],
+          notes: [
+            {
+              x: 320,
+              y: 182,
+              l: "same instant — only one must be processed",
+              a: "middle",
+              bad: 1,
+            },
+          ],
+        },
+
+        flow: {
+          h: 440,
+          alt: "Flowchart: check header, then the DB; insert and process for a new key (201); return 200 for consumed, 409 for created, 400 for missing",
+          n: [
+            {
+              t: "client",
+              x: 10,
+              y: 8,
+              w: 150,
+              h: 54,
+              l: "Client",
+              s: "① generate IK (UUID)",
+            },
+            {
+              t: "app",
+              x: 10,
+              y: 100,
+              w: 150,
+              h: 56,
+              l: "Server",
+              s: "POST · header IK1",
+            },
+            { t: "lb", x: 220, y: 100, w: 150, h: 56, l: "IK in header?" },
+            {
+              t: "cache",
+              x: 450,
+              y: 100,
+              w: 180,
+              h: 56,
+              l: "400",
+              s: "validation error",
+            },
+            { t: "lb", x: 220, y: 196, w: 150, h: 56, l: "IK in DB?" },
+            {
+              t: "db",
+              x: 440,
+              y: 186,
+              w: 190,
+              h: 72,
+              l: "Insert IK1",
+              s: "status = created",
+            },
+            {
+              t: "app",
+              x: 440,
+              y: 290,
+              w: 190,
+              h: 52,
+              l: "Do the operation",
+              s: "add item to cart",
+            },
+            {
+              t: "app",
+              c: "db",
+              x: 440,
+              y: 374,
+              w: 190,
+              h: 56,
+              l: "Mark consumed",
+              s: "→ 201 Created",
+            },
+            { t: "lb", x: 220, y: 300, w: 150, h: 56, l: "Status?" },
+            {
+              t: "app",
+              c: "db",
+              x: 10,
+              y: 270,
+              w: 150,
+              h: 52,
+              l: "200 OK",
+              s: "already done",
+            },
+            {
+              t: "cache",
+              x: 10,
+              y: 362,
+              w: 150,
+              h: 52,
+              l: "409 Conflict",
+              s: "still in progress",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [85, 62],
+                [85, 100],
+              ],
+              l: "② send with header",
+              at: [95, 86],
+              a: "start",
+            },
+            {
+              p: [
+                [160, 128],
+                [220, 128],
+              ],
+            },
+            {
+              p: [
+                [370, 128],
+                [450, 128],
+              ],
+              bad: 1,
+              l: "no",
+              at: [410, 120],
+            },
+            {
+              p: [
+                [295, 156],
+                [295, 196],
+              ],
+              l: "yes",
+              at: [305, 180],
+              a: "start",
+            },
+            {
+              p: [
+                [370, 224],
+                [440, 224],
+              ],
+              l: "no",
+              at: [405, 216],
+            },
+            {
+              p: [
+                [535, 258],
+                [535, 290],
+              ],
+            },
+            {
+              p: [
+                [535, 342],
+                [535, 374],
+              ],
+              good: 1,
+            },
+            {
+              p: [
+                [295, 252],
+                [295, 300],
+              ],
+              l: "yes",
+              at: [305, 280],
+              a: "start",
+            },
+            {
+              p: [
+                [220, 318],
+                [160, 300],
+              ],
+              good: 1,
+              l: "consumed",
+              at: [192, 296],
+              a: "middle",
+            },
+            {
+              p: [
+                [220, 340],
+                [160, 384],
+              ],
+              bad: 1,
+              l: "created",
+              at: [192, 380],
+              a: "middle",
+            },
+          ],
+        },
+
+        mutex: {
+          h: 250,
+          alt: "Two parallel requests reach a lock; only one at a time enters the critical section that reads and inserts the key",
+          n: [
+            { t: "client", x: 10, y: 40, w: 110, h: 46, l: "Request 1" },
+            {
+              t: "client",
+              x: 10,
+              y: 150,
+              w: 110,
+              h: 46,
+              l: "Request 2",
+              s: "waits",
+            },
+            { t: "lb", x: 180, y: 86, w: 120, h: 66, l: "Lock", s: "mutex" },
+            { t: "zone", x: 340, y: 40, w: 290, h: 160, l: "CRITICAL SECTION" },
+            { t: "app", x: 356, y: 70, w: 258, h: 44, l: "④ read IK1 from DB" },
+            {
+              t: "app",
+              x: 356,
+              y: 134,
+              w: 258,
+              h: 44,
+              l: "⑤ insert IK1 | created (if missing)",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [120, 63],
+                [180, 104],
+              ],
+              good: 1,
+              l: "gets lock",
+              at: [150, 72],
+              a: "middle",
+            },
+            {
+              p: [
+                [120, 173],
+                [180, 136],
+              ],
+              bad: 1,
+              dash: 1,
+            },
+            {
+              p: [
+                [300, 119],
+                [340, 119],
+              ],
+            },
+            {
+              p: [
+                [485, 114],
+                [485, 134],
+              ],
+            },
+          ],
+          notes: [
+            {
+              x: 320,
+              y: 238,
+              l: "only one request at a time · the second then finds IK1 → 409 or 200",
+              a: "middle",
+              strong: 1,
+            },
+          ],
+        },
+
+        multi: {
+          h: 280,
+          alt: "Duplicates reach servers in two clusters with separate DBs; DB sync is slow, so keys are checked in a shared cache",
+          n: [
+            { t: "client", x: 10, y: 110, w: 110, h: 52, l: "Client" },
+            {
+              t: "app",
+              x: 180,
+              y: 40,
+              w: 130,
+              h: 50,
+              l: "Server 1",
+              s: "cluster A",
+            },
+            {
+              t: "app",
+              x: 180,
+              y: 182,
+              w: 130,
+              h: 50,
+              l: "Server 2",
+              s: "cluster B",
+            },
+            { t: "db", x: 490, y: 30, w: 130, h: 66, l: "DB A" },
+            { t: "db", x: 490, y: 176, w: 130, h: 66, l: "DB B" },
+            {
+              t: "cache",
+              x: 370,
+              y: 110,
+              w: 120,
+              h: 52,
+              l: "Shared cache",
+              s: "IK + lock",
+            },
+          ],
+          e: [
+            {
+              p: [
+                [120, 126],
+                [180, 66],
+              ],
+              l: "POST · IK1",
+              at: [150, 88],
+              a: "end",
+            },
+            {
+              p: [
+                [120, 146],
+                [180, 206],
+              ],
+              l: "POST · IK1",
+              at: [150, 192],
+              a: "end",
+            },
+            {
+              p: [
+                [310, 65],
+                [490, 63],
+              ],
+            },
+            {
+              p: [
+                [310, 207],
+                [490, 209],
+              ],
+            },
+            {
+              p: [
+                [555, 96],
+                [555, 176],
+              ],
+              both: 1,
+              dash: 1,
+              bad: 1,
+              l: "slow sync",
+              at: [565, 140],
+              a: "start",
+            },
+            {
+              p: [
+                [290, 90],
+                [390, 110],
+              ],
+              both: 1,
+              good: 1,
+            },
+            {
+              p: [
+                [290, 182],
+                [390, 162],
+              ],
+              both: 1,
+              good: 1,
+            },
+          ],
+          notes: [
+            {
+              x: 320,
+              y: 272,
+              l: "check and lock the key in the cache — it syncs in milliseconds",
+              a: "middle",
+              strong: 1,
+            },
+          ],
+        },
+      };
+    </script>
+    <script>
+      (function () {
+        var D = window.DIAGRAMS || {};
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        }
+        function label(n, cx, ty) {
+          var o = "";
+          if (n.s) {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty - 3) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            o +=
+              '<text class="ns" x="' +
+              cx +
+              '" y="' +
+              (ty + 12) +
+              '" text-anchor="middle">' +
+              esc(n.s) +
+              "</text>";
+          } else if (n.l) {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty + 5) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+          }
+          return o;
+        }
+        function node(n) {
+          var o = "",
+            cx = n.x + n.w / 2,
+            cls = "n t-" + (n.c || n.t) + (n.down ? " down" : "");
+          if (n.t === "zone") {
+            return (
+              '<rect class="zone' +
+              (n.bad ? " bad" : "") +
+              '" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="12"/>' +
+              (n.l
+                ? '<text class="zl' +
+                  (n.bad ? " bad" : "") +
+                  '" x="' +
+                  (n.x + 12) +
+                  '" y="' +
+                  (n.y + 17) +
+                  '">' +
+                  esc(n.l) +
+                  "</text>"
+                : "")
+            );
+          }
+          if (n.t === "line") {
+            // plain vertical/horizontal rule, e.g. sequence-diagram lifeline
+            return (
+              '<line class="life" x1="' +
+              n.x +
+              '" y1="' +
+              n.y +
+              '" x2="' +
+              (n.x + n.w) +
+              '" y2="' +
+              (n.y + n.h) +
+              '"/>'
+            );
+          }
+          if (n.t === "ring") {
+            // hash ring: centre (cx,cy), radius r, optional tick count + position numbers
+            var s =
+              '<circle class="ringc" cx="' +
+              n.cx +
+              '" cy="' +
+              n.cy +
+              '" r="' +
+              n.r +
+              '"/>';
+            for (var i = 0; i < (n.ticks || 0); i++) {
+              var a = ((-90 + (i * 360) / n.ticks) * Math.PI) / 180,
+                c = Math.cos(a),
+                si = Math.sin(a);
+              s +=
+                '<line class="tick" x1="' +
+                (n.cx + (n.r - 5) * c) +
+                '" y1="' +
+                (n.cy + (n.r - 5) * si) +
+                '" x2="' +
+                (n.cx + (n.r + 5) * c) +
+                '" y2="' +
+                (n.cy + (n.r + 5) * si) +
+                '"/>';
+              if (n.nums)
+                s +=
+                  '<text class="ringn" x="' +
+                  (n.cx + (n.r - 30) * c) +
+                  '" y="' +
+                  (n.cy + (n.r - 30) * si + 4) +
+                  '" text-anchor="middle">' +
+                  i +
+                  "</text>";
+            }
+            if (n.l)
+              s +=
+                '<text class="nt" x="' +
+                n.cx +
+                '" y="' +
+                (n.cy + 4) +
+                '" text-anchor="middle">' +
+                esc(n.l) +
+                "</text>";
+            return s;
+          }
+          var ty = n.y + n.h / 2;
+          if (n.t === "db") {
+            var e = 8,
+              x = n.x,
+              y = n.y,
+              w = n.w,
+              h = n.h;
+            o +=
+              '<path class="' +
+              cls.replace("t-db", "t-" + (n.c || "db")) +
+              '" d="M' +
+              x +
+              "," +
+              (y + e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              (x + w) +
+              "," +
+              (y + e) +
+              " V" +
+              (y + h - e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              x +
+              "," +
+              (y + h - e) +
+              ' Z"/>';
+            o +=
+              '<ellipse class="' +
+              cls.replace("t-db", "t-" + (n.c || "db")) +
+              '" cx="' +
+              cx +
+              '" cy="' +
+              (y + e) +
+              '" rx="' +
+              w / 2 +
+              '" ry="' +
+              e +
+              '"/>';
+            ty += e / 2;
+          } else if (n.t === "circle") {
+            o +=
+              '<circle class="' +
+              cls.replace("t-circle", "t-" + (n.c || "app")) +
+              '" cx="' +
+              cx +
+              '" cy="' +
+              ty +
+              '" r="' +
+              n.w / 2 +
+              '"/>';
+          } else {
+            o +=
+              '<rect class="' +
+              cls +
+              '" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="9"/>';
+          }
+          if (n.slots) {
+            var pad = 16,
+              cw = (n.w - pad * 2 - 4 * 6) / 5,
+              cy = n.y + n.h - 30;
+            for (var i = 0; i < 5; i++)
+              o +=
+                '<rect class="slot" x="' +
+                (n.x + pad + i * (cw + 6)) +
+                '" y="' +
+                cy +
+                '" width="' +
+                cw +
+                '" height="16" rx="3"/>';
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (n.y + 24) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            return o;
+          }
+          o += label(n, cx, ty);
+          if (n.down) {
+            o +=
+              '<text class="downx" x="' +
+              (n.w < 90 ? n.x + n.w / 2 : n.x + n.w - 4) +
+              '" y="' +
+              (n.w < 90 ? n.y - 4 : n.y + 14) +
+              '" text-anchor="' +
+              (n.w < 90 ? "middle" : "end") +
+              '">DOWN</text>';
+          }
+          return o;
+        }
+        function svg(key, d) {
+          var mid = "ah-" + key,
+            mbad = "ahb-" + key;
+          var o =
+            '<svg viewBox="0 0 640 ' +
+            d.h +
+            '" role="img" aria-label="' +
+            esc(d.alt || "Diagram") +
+            '">';
+          o +=
+            '<defs><marker id="' +
+            mid +
+            '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>' +
+            '<marker id="' +
+            mbad +
+            '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahb" d="M0,0 L10,5 L0,10 z"/></marker></defs>';
+          d.n.forEach(function (n) {
+            if (n.t === "zone" || n.t === "line" || n.t === "ring")
+              o += node(n);
+          });
+          (d.e || []).forEach(function (e) {
+            var pts = e.p
+              .map(function (p) {
+                return p.join(",");
+              })
+              .join(" ");
+            var m = e.bad ? mbad : mid;
+            o +=
+              '<polyline class="ed' +
+              (e.dash ? " dash" : "") +
+              (e.bad ? " bad" : "") +
+              (e.good ? " good" : "") +
+              '" points="' +
+              pts +
+              '"' +
+              (e.noarrow ? "" : ' marker-end="url(#' + m + ')"') +
+              (e.both ? ' marker-start="url(#' + m + ')"' : "") +
+              "/>";
+            if (e.cut) {
+              // a ✕ on a broken link
+              var c = e.cut;
+              o +=
+                '<text class="cutx" x="' +
+                c[0] +
+                '" y="' +
+                (c[1] + 6) +
+                '" text-anchor="middle">✕</text>';
+            }
+          });
+          d.n.forEach(function (n) {
+            if (n.t !== "zone" && n.t !== "line" && n.t !== "ring")
+              o += node(n);
+          });
+          (d.e || []).forEach(function (e) {
+            if (e.l)
+              o +=
+                '<text class="el' +
+                (e.bad ? " bad" : "") +
+                '" x="' +
+                e.at[0] +
+                '" y="' +
+                e.at[1] +
+                '" text-anchor="' +
+                (e.a || "middle") +
+                '">' +
+                esc(e.l) +
+                "</text>";
+          });
+          (d.notes || []).forEach(function (t) {
+            o +=
+              '<text class="nt' +
+              (t.bad ? " bad" : "") +
+              (t.strong ? " strong" : "") +
+              '" x="' +
+              t.x +
+              '" y="' +
+              t.y +
+              '" text-anchor="' +
+              (t.a || "start") +
+              '">' +
+              esc(t.l) +
+              "</text>";
+          });
+          return o + "</svg>";
+        }
+        document.querySelectorAll(".dg[data-d]").forEach(function (el) {
+          var k = el.getAttribute("data-d");
+          if (D[k]) el.innerHTML = svg(k, D[k]);
+        });
+        var links = [].slice.call(document.querySelectorAll("#rail a"));
+        if (links.length && "IntersectionObserver" in window) {
+          var io = new IntersectionObserver(
+            function (ents) {
+              ents.forEach(function (en) {
+                if (en.isIntersecting) {
+                  links.forEach(function (a) {
+                    a.classList.toggle(
+                      "on",
+                      a.getAttribute("href") === "#" + en.target.id,
+                    );
+                  });
+                }
+              });
+            },
+            { rootMargin: "-30% 0px -60% 0px" },
+          );
+          document.querySelectorAll("main .step").forEach(function (sec) {
+            io.observe(sec);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>
