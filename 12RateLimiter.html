@@ -1,0 +1,2683 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Rate Limiter Design</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+      }
+      img {
+        max-width: 100%;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #eef1f4;
+        --surface: #ffffff;
+        --sunk: #e3e8ed;
+        --ink: #15202b;
+        --muted: #56636f;
+        --rule: #d3dae1;
+        --line: #8795a2;
+        --accent: #0e7c7b;
+        --accent-soft: #d7efee;
+        --warn: #b45a12;
+        --warn-soft: #fbe9d8;
+        --c-client-f: #e7ebef;
+        --c-client-s: #56636f;
+        --c-lb-f: #ede8ff;
+        --c-lb-s: #6546d6;
+        --c-app-f: #e3ecff;
+        --c-app-s: #2d5fc4;
+        --c-db-f: #dff3e7;
+        --c-db-s: #23845a;
+        --c-cache-f: #ffe7de;
+        --c-cache-s: #c94c25;
+        --c-cdn-f: #d9f1f1;
+        --c-cdn-s: #0e8080;
+        --c-mq-f: #fff0d3;
+        --c-mq-s: #a8701a;
+        --display:
+          "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui,
+          sans-serif;
+        --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+        --mono:
+          "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          color-scheme: dark;
+          --bg: #0f151b;
+          --surface: #172029;
+          --sunk: #1d2833;
+          --ink: #e3e9ef;
+          --muted: #98a5b1;
+          --rule: #2a3643;
+          --line: #6a7988;
+          --accent: #4cc8c4;
+          --accent-soft: #12302f;
+          --warn: #f0a060;
+          --warn-soft: #35240f;
+          --c-client-f: #202a34;
+          --c-client-s: #94a2af;
+          --c-lb-f: #241e44;
+          --c-lb-s: #a48fff;
+          --c-app-f: #162844;
+          --c-app-s: #76a0ff;
+          --c-db-f: #132e1f;
+          --c-db-s: #52c68a;
+          --c-cache-f: #371c13;
+          --c-cache-s: #ff8b64;
+          --c-cdn-f: #0f2f2f;
+          --c-cdn-s: #41c9c9;
+          --c-mq-f: #36290e;
+          --c-mq-s: #e7ab48;
+        }
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0f151b;
+        --surface: #172029;
+        --sunk: #1d2833;
+        --ink: #e3e9ef;
+        --muted: #98a5b1;
+        --rule: #2a3643;
+        --line: #6a7988;
+        --accent: #4cc8c4;
+        --accent-soft: #12302f;
+        --warn: #f0a060;
+        --warn-soft: #35240f;
+        --c-client-f: #202a34;
+        --c-client-s: #94a2af;
+        --c-lb-f: #241e44;
+        --c-lb-s: #a48fff;
+        --c-app-f: #162844;
+        --c-app-s: #76a0ff;
+        --c-db-f: #132e1f;
+        --c-db-s: #52c68a;
+        --c-cache-f: #371c13;
+        --c-cache-s: #ff8b64;
+        --c-cdn-f: #0f2f2f;
+        --c-cdn-s: #41c9c9;
+        --c-mq-f: #36290e;
+        --c-mq-s: #e7ab48;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 17px;
+        line-height: 1.62;
+        padding-inline: 20px;
+        padding-block: 0 64px;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--display);
+        line-height: 1.12;
+        text-wrap: balance;
+        margin: 0;
+      }
+      h2 {
+        font-size: clamp(28px, 4.2vw, 38px);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      h3 {
+        font-size: 19px;
+        font-weight: 700;
+        margin-top: 28px;
+        margin-bottom: 6px;
+      }
+      p {
+        margin: 0 0 12px;
+      }
+      ul,
+      ol {
+        margin: 0 0 12px;
+        padding-left: 22px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      li::marker {
+        color: var(--muted);
+      }
+      code,
+      .mono {
+        font-family: var(--mono);
+        font-size: 0.84em;
+      }
+      code {
+        background: var(--sunk);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      b,
+      strong {
+        font-weight: 600;
+      }
+
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 56px;
+      }
+      @media (max-width: 960px) {
+        .wrap {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .rail {
+          display: none;
+        }
+      }
+
+      /* hero */
+      .hero {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-block: 48px 28px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        gap: 40px;
+        align-items: end;
+      }
+      @media (max-width: 860px) {
+        .hero {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 20px;
+        }
+      }
+      .eyebrow {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: clamp(44px, 7.4vw, 84px);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 0.95;
+      }
+      h1 .big {
+        color: var(--accent);
+      }
+      .hero .intro {
+        font-size: 18px;
+        margin-top: 18px;
+        max-width: 34em;
+        color: var(--ink);
+      }
+      .stairs {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .stairs text {
+        font-family: var(--mono);
+      }
+      .stairs .st {
+        fill: var(--sunk);
+        stroke: var(--rule);
+      }
+      .stairs a:hover .st,
+      .stairs a:focus .st {
+        fill: var(--accent-soft);
+        stroke: var(--accent);
+      }
+      .stairs .sn {
+        font-size: 13px;
+        font-weight: 600;
+        fill: var(--ink);
+      }
+      .stairs .sl {
+        font-size: 11.5px;
+        fill: var(--muted);
+      }
+      .stairs .star {
+        font-size: 13px;
+        fill: var(--warn);
+      }
+      .stairs .cap {
+        font-size: 11px;
+        fill: var(--muted);
+      }
+
+      .legend {
+        max-width: 1120px;
+        margin: 0 auto 36px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        align-items: center;
+        border-top: 1px solid var(--rule);
+        padding-top: 16px;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid;
+        vertical-align: -2px;
+        margin-right: 6px;
+      }
+
+      /* rail */
+      .rail {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        align-self: start;
+        padding-top: 8px;
+        max-height: 100vh;
+        overflow: auto;
+      }
+      .rail ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-family: var(--display);
+        font-size: 15px;
+      }
+      .rail li {
+        margin: 0;
+      }
+      .rail a {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 6px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        color: var(--muted);
+        text-decoration: none;
+        line-height: 1.3;
+      }
+      .rail a span {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding-top: 2px;
+      }
+      .rail a:hover {
+        background: var(--sunk);
+        color: var(--ink);
+      }
+      .rail a.on {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      .rail .head {
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 10px 8px;
+      }
+
+      main {
+        min-width: 0;
+      }
+      .step {
+        padding-block: 40px;
+        border-top: 1px solid var(--rule);
+      }
+      .step:first-child {
+        border-top: 0;
+        padding-top: 4px;
+      }
+      .step > * {
+        max-width: 720px;
+      }
+      .step > figure {
+        max-width: 760px;
+      }
+      .snum {
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .flag {
+        color: var(--warn);
+        background: var(--warn-soft);
+        padding: 2px 8px;
+        border-radius: 99px;
+        letter-spacing: 0.02em;
+        text-transform: none;
+      }
+      .lede {
+        font-size: 19px;
+        margin-top: 12px;
+        color: var(--ink);
+      }
+
+      .eli5 {
+        background: var(--accent-soft);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 22px 0;
+      }
+      .eli5 p:last-child {
+        margin-bottom: 0;
+      }
+      .tag {
+        display: block;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 6px;
+        font-weight: 600;
+      }
+      .beyond {
+        border: 1px solid var(--rule);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 24px 0 8px;
+      }
+      .beyond .tag {
+        color: var(--muted);
+      }
+      .beyond ul:last-child,
+      .beyond p:last-child {
+        margin-bottom: 0;
+      }
+      .handoff {
+        margin-top: 22px;
+        font-family: var(--display);
+        font-size: 16px;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .handoff b {
+        color: var(--warn);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      figure {
+        margin: 22px 0;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 16px 12px 10px;
+        box-shadow: 0 0 0 1px var(--rule);
+      }
+      figcaption {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        padding: 8px 8px 2px;
+        line-height: 1.5;
+      }
+      .dg {
+        overflow-x: auto;
+      }
+      .dg svg {
+        display: block;
+        width: 100%;
+        min-width: 540px;
+        max-width: 680px;
+        margin: 0 auto;
+        height: auto;
+      }
+      svg .n {
+        stroke-width: 1.6;
+      }
+      svg .t-client {
+        fill: var(--c-client-f);
+        stroke: var(--c-client-s);
+      }
+      svg .t-lb {
+        fill: var(--c-lb-f);
+        stroke: var(--c-lb-s);
+      }
+      svg .t-app {
+        fill: var(--c-app-f);
+        stroke: var(--c-app-s);
+      }
+      svg .t-db {
+        fill: var(--c-db-f);
+        stroke: var(--c-db-s);
+      }
+      svg .t-cache {
+        fill: var(--c-cache-f);
+        stroke: var(--c-cache-s);
+      }
+      svg .t-cdn {
+        fill: var(--c-cdn-f);
+        stroke: var(--c-cdn-s);
+      }
+      svg .t-mq {
+        fill: var(--c-mq-f);
+        stroke: var(--c-mq-s);
+      }
+      svg .slot {
+        fill: var(--surface);
+        stroke: var(--c-mq-s);
+        stroke-width: 1.2;
+      }
+      svg .zone {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.3;
+        stroke-dasharray: 5 5;
+      }
+      svg .zl {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        fill: var(--muted);
+      }
+      svg .nl {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 13.5px;
+        fill: var(--ink);
+      }
+      svg .ns {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg .nt {
+        font-family: var(--mono);
+        font-size: 11px;
+        fill: var(--muted);
+      }
+      svg .ed {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.6;
+      }
+      svg .ed.dash {
+        stroke-dasharray: 5 4;
+      }
+      svg .ah {
+        fill: var(--line);
+      }
+      svg .el {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--ink);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 5px;
+        stroke-linejoin: round;
+      }
+
+      /* latency bars */
+      .lat {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 8px 12px;
+        align-items: center;
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 6px 8px 4px;
+      }
+      .lat .bar {
+        height: 14px;
+        border-radius: 4px;
+        background: var(--c-cdn-s);
+        opacity: 0.85;
+      }
+      .lat .v {
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+      }
+
+      /* sharding tables */
+      .shard {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        justify-content: center;
+        padding: 8px 4px;
+      }
+      .tbl {
+        display: grid;
+        border: 1.5px solid var(--c-db-s);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--c-db-f);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .tbl div {
+        padding: 3px 8px;
+        border-top: 1px solid var(--rule);
+        white-space: nowrap;
+      }
+      .tbl div.h {
+        border-top: 0;
+        font-weight: 600;
+        background: var(--surface);
+        color: var(--ink);
+      }
+      .tbl .dim {
+        color: var(--muted);
+      }
+      .arrow {
+        font-family: var(--display);
+        font-size: 26px;
+        color: var(--line);
+      }
+      .tname {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+        margin-bottom: 4px;
+      }
+
+      /* exchange cards */
+      .xgrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      @media (max-width: 620px) {
+        .xgrid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .x {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .x h4 {
+        font-family: var(--display);
+        font-size: 17px;
+        margin: 0 0 4px;
+      }
+      .x .rule {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--c-mq-s);
+        margin-bottom: 6px;
+      }
+      .x p {
+        font-size: 15.5px;
+        margin: 0;
+      }
+      .x .src {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-top: 8px;
+      }
+
+      /* compare table */
+      .tw {
+        overflow-x: auto;
+        margin: 16px 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 15px;
+        min-width: 560px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--rule);
+        vertical-align: top;
+      }
+      th {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td:first-child {
+        font-family: var(--display);
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      /* quiz */
+      details {
+        border-top: 1px solid var(--rule);
+        padding: 12px 0;
+      }
+      details:last-of-type {
+        border-bottom: 1px solid var(--rule);
+      }
+      summary {
+        cursor: pointer;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 17px;
+        list-style: none;
+        display: flex;
+        gap: 10px;
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+      summary::before {
+        content: "+";
+        font-family: var(--mono);
+        color: var(--accent);
+        width: 14px;
+        flex: none;
+      }
+      details[open] summary::before {
+        content: "–";
+      }
+      details p {
+        margin: 8px 0 0 24px;
+      }
+
+      .sources {
+        font-size: 15px;
+      }
+      .sources li {
+        margin-bottom: 4px;
+      }
+      .foot {
+        max-width: 720px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 28px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .rail a {
+          transition: background 0.15s;
+        }
+      }
+
+      /* ── additions shared by lectures 1–4 ── */
+      svg .n.down {
+        opacity: 0.5;
+        stroke-dasharray: 4 3;
+      }
+      svg .downx {
+        font-family: var(--mono);
+        font-size: 9.5px;
+        font-weight: 600;
+        fill: var(--warn);
+        letter-spacing: 0.06em;
+      }
+      svg .ed.bad {
+        stroke: var(--warn);
+      }
+      svg .ed.good {
+        stroke: var(--accent);
+      }
+      svg .ahb {
+        fill: var(--warn);
+      }
+      svg .el.bad,
+      svg .nt.bad {
+        fill: var(--warn);
+      }
+      svg .nt.strong {
+        fill: var(--ink);
+        font-weight: 600;
+      }
+      svg .cutx {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 18px;
+        fill: var(--warn);
+        paint-order: stroke;
+        stroke: var(--surface);
+        stroke-width: 5px;
+      }
+      svg .zone.bad {
+        stroke: var(--warn);
+      }
+      svg .zl.bad {
+        fill: var(--warn);
+      }
+      svg .life {
+        stroke: var(--line);
+        stroke-width: 1.4;
+      }
+      svg .ringc {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 10;
+        stroke-opacity: 0.28;
+      }
+      svg .tick {
+        stroke: var(--line);
+        stroke-width: 1.2;
+      }
+      svg .ringn {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        fill: var(--muted);
+      }
+      svg circle.n {
+        stroke-width: 1.6;
+      }
+
+      /* worked calculations */
+      .calc {
+        font-family: var(--mono);
+        font-size: 13.5px;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin: 16px 0;
+        overflow-x: auto;
+        line-height: 1.75;
+        font-variant-numeric: tabular-nums;
+      }
+      .calc .c {
+        color: var(--muted);
+      }
+      .calc b {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+      }
+      @media (max-width: 720px) {
+        .tiles {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .tile {
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .tile b {
+        display: block;
+        font-family: var(--display);
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      .tile span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+      }
+
+      /* bit layout */
+      .bits {
+        display: flex;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1.5px solid var(--c-lb-s);
+        font-family: var(--mono);
+        font-size: 12px;
+        min-width: 520px;
+      }
+      .bits div {
+        padding: 10px 8px;
+        text-align: center;
+        border-left: 1px solid var(--c-lb-s);
+        background: var(--c-lb-f);
+      }
+      .bits div:first-child {
+        border-left: 0;
+        background: var(--sunk);
+      }
+      .bits b {
+        display: block;
+        font-family: var(--display);
+        font-size: 14px;
+      }
+      .code {
+        font-family: var(--mono);
+        font-size: 13px;
+        background: var(--sunk);
+        border-radius: 10px;
+        padding: 12px 14px;
+        overflow-x: auto;
+        white-space: pre;
+        line-height: 1.6;
+      }
+
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .side .cap {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* OSI-style stack */
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-width: 460px;
+      }
+      .stack a,
+      .stack div {
+        display: grid;
+        grid-template-columns: 34px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 14px;
+        border-radius: 10px;
+        background: var(--sunk);
+        color: var(--muted);
+        text-decoration: none;
+        font-family: var(--display);
+        font-size: 15px;
+      }
+      .stack .no {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .stack .ex {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .stack .hot {
+        background: var(--accent-soft);
+        color: var(--ink);
+        box-shadow: inset 0 0 0 1.5px var(--accent);
+        font-weight: 700;
+      }
+      .stack .hot .ex {
+        color: var(--accent);
+      }
+
+      /* pattern cards in hero */
+      .pgrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      @media (max-width: 520px) {
+        .pgrid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .pgrid a {
+        display: block;
+        background: var(--surface);
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+        padding: 14px;
+        text-decoration: none;
+        color: var(--ink);
+      }
+      .pgrid a:hover {
+        border-color: var(--accent);
+      }
+      .pgrid b {
+        display: block;
+        font-family: var(--display);
+        font-size: 20px;
+        font-weight: 800;
+      }
+      .pgrid span {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+        line-height: 1.45;
+      }
+      .pgrid .star {
+        color: var(--warn);
+      }
+
+      /* verdict pills in tables */
+      .pill {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 99px;
+        white-space: nowrap;
+      }
+      .pill.yes {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .pill.no {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      td .mono {
+        font-size: 13px;
+      }
+
+      .two {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin: 18px 0;
+      }
+      @media (max-width: 620px) {
+        .two {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .two .x ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-size: 15.5px;
+      }
+      .two .x li {
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <div class="eyebrow">HLD lecture 12 · study notes</div>
+        <h1>Design a <span class="big">Rate Limiter</span></h1>
+        <p class="intro">
+          A rate limiter caps how many requests a user can make in a period of
+          time, for example 3 tweets a minute. Anything over the limit is
+          rejected before it reaches your servers. Almost every API needs one,
+          and the interview hinges on knowing five algorithms and when each
+          fits.
+        </p>
+      </div>
+      <div class="side">
+        <span class="cap">A gatekeeper in front of your servers</span>
+        <div class="dg"><div class="dg" data-d="hero"></div></div>
+      </div>
+    </header>
+
+    <div class="legend" aria-label="Diagram colour key">
+      <span>Colour key:</span>
+      <span
+        ><i
+          style="background: var(--c-client-f); border-color: var(--c-client-s)"
+        ></i
+        >Client / request</span
+      >
+      <span
+        ><i style="background: var(--c-lb-f); border-color: var(--c-lb-s)"></i
+        >Rate limiter / decision</span
+      >
+      <span
+        ><i style="background: var(--c-app-f); border-color: var(--c-app-s)"></i
+        >Server</span
+      >
+      <span
+        ><i style="background: var(--c-mq-f); border-color: var(--c-mq-s)"></i
+        >Bucket / queue / request</span
+      >
+      <span
+        ><i
+          style="background: var(--c-cache-f); border-color: var(--c-cache-s)"
+        ></i
+        >Rejected (429) / Redis</span
+      >
+    </div>
+
+    <div class="wrap">
+      <nav class="rail" aria-label="Sections">
+        <p class="head">In this lecture</p>
+        <ol id="rail">
+          <li>
+            <a href="#s1"><span>01</span>The problem</a>
+          </li>
+          <li>
+            <a href="#s2"><span>02</span>Token bucket</a>
+          </li>
+          <li>
+            <a href="#s3"><span>03</span>Leaking bucket</a>
+          </li>
+          <li>
+            <a href="#s4"><span>04</span>Fixed window counter</a>
+          </li>
+          <li>
+            <a href="#s5"><span>05</span>Sliding window log</a>
+          </li>
+          <li>
+            <a href="#s6"><span>06</span>Sliding window counter</a>
+          </li>
+          <li>
+            <a href="#s7"><span>→</span>The design</a>
+          </li>
+          <li>
+            <a href="#s8"><span>→</span>Distributed limiters</a>
+          </li>
+          <li>
+            <a href="#extra"><span>+</span>Good to know</a>
+          </li>
+          <li>
+            <a href="#revise"><span>?</span>Revision</a>
+          </li>
+        </ol>
+      </nav>
+
+      <main>
+        <section class="step" id="s1">
+          <div class="snum">
+            Why <span class="flag">★ very common interview question</span>
+          </div>
+          <h2>The problem: too many requests</h2>
+          <figure>
+            <div class="dg" data-d="ddos"></div>
+            <figcaption>
+              An attacker floods the server. Its limited RAM, CPU and disk run
+              out, the server goes down, and genuine users get turned away.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              In a <b>DDoS attack</b>, attackers send thousands or even lakhs of
+              requests in seconds.
+            </li>
+            <li>
+              Every server has <b>limited resources</b> (RAM, CPU, disk). The
+              flood uses them up, and the server goes down.
+            </li>
+            <li>Now <b>genuine users</b> get declined too.</li>
+            <li>
+              A <b>rate limiter</b> stops this by capping requests per user or
+              client. Every backend engineer builds APIs, so knowing how to
+              limit their rate is basic.
+            </li>
+          </ul>
+          <div class="eli5">
+            <span class="tag">Picture it</span>
+            <p>
+              A theme park ride lets in a fixed number of people per run. A
+              guard at the gate counts people. When the ride is full, the next
+              person is told "please wait and come back". The ride never gets
+              overloaded, and the people already on it have a good time.
+            </p>
+          </div>
+          <p>
+            The lecture covers <b>five algorithms</b>, then the design: token
+            bucket, leaking bucket, fixed window counter, sliding window log and
+            sliding window counter.
+          </p>
+        </section>
+
+        <section class="step" id="s2">
+          <div class="snum">Algorithm 1</div>
+          <h2>Token bucket</h2>
+          <p class="lede">
+            A bucket holds <b>tokens</b>, and every request must take one. A
+            <b>refiller</b> adds tokens at a fixed rate. No token means the
+            request is rejected.
+          </p>
+          <figure>
+            <div class="dg" data-d="token"></div>
+            <figcaption>
+              The refiller adds 2 tokens a minute to a bucket that holds at most
+              4. A request takes a token if there is one. Otherwise it gets 429.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Capacity:</b> the most tokens the bucket can hold, say 4.
+              Tokens added when it's full <b>overflow</b> and are discarded.
+            </li>
+            <li>
+              <b>Refiller:</b> adds tokens on a schedule, say 2 per minute.
+            </li>
+            <li>
+              Both numbers come from a <b>config file</b>, so they can be
+              changed without code changes.
+            </li>
+            <li>A rejected request gets HTTP <b>429 Too Many Requests</b>.</li>
+          </ul>
+          <h3>Worked example</h3>
+          <p>
+            <b>Rule:</b> each user gets 3 tokens for the post-tweet API, and the
+            refiller adds 2 tokens per minute (never above 3). Implemented as a
+            simple <b>counter per user</b>.
+          </p>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Request</th>
+                  <th>Tokens before → after</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">10:01:00</td>
+                  <td>post tweet</td>
+                  <td class="mono">3 → 2</td>
+                  <td><span class="pill yes">allowed</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:01:25</td>
+                  <td>post tweet</td>
+                  <td class="mono">2 → 1</td>
+                  <td><span class="pill yes">allowed</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:01:35</td>
+                  <td>post tweet</td>
+                  <td class="mono">1 → 0</td>
+                  <td><span class="pill yes">allowed</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:01:50</td>
+                  <td>post tweet</td>
+                  <td class="mono">0 → 0</td>
+                  <td><span class="pill no">429 denied</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:02</td>
+                  <td>(refill +2)</td>
+                  <td class="mono">0 → 2</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:03</td>
+                  <td>(refill +2, capped at 3)</td>
+                  <td class="mono">2 → 3 (1 overflows)</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:03</td>
+                  <td>post tweet</td>
+                  <td class="mono">3 → 2</td>
+                  <td><span class="pill yes">allowed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Rules can be set <b>per user</b>, <b>per API</b>, or both.</p>
+        </section>
+
+        <section class="step" id="s3">
+          <div class="snum">Algorithm 2</div>
+          <h2>Leaking bucket</h2>
+          <p class="lede">
+            Requests pour into a bucket with a hole in the bottom. They
+            <b>leak out at a constant rate</b> to be processed. If they pour in
+            faster than they leak, the bucket overflows and the extras are
+            rejected.
+          </p>
+          <figure>
+            <div class="dg" data-d="leaky"></div>
+            <figcaption>
+              Implemented with a fixed-size FIFO queue. If the queue is full,
+              reject with 429. Otherwise enqueue, and requests leave at a steady
+              rate.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              Built with a <b>queue</b> of fixed capacity, first in first out.
+            </li>
+            <li>
+              Request arrives → <b>queue full?</b> Yes: <b>429</b>. No: add to
+              the queue.
+            </li>
+            <li>
+              Requests are taken from the queue and processed at a
+              <b>constant rate</b>.
+            </li>
+          </ul>
+          <h3>Disadvantage: bursty traffic</h3>
+          <p>
+            Some apps have legitimate bursts. Amazon Prime Video traffic is low
+            during the day and spikes in the evening. A leaking bucket processes
+            everything at the same steady rate, so during a spike,
+            <b>old requests sit in the queue and new ones get rejected</b>. Ask
+            the interviewer whether the app needs a constant processing rate
+            before choosing this.
+          </p>
+        </section>
+
+        <section class="step" id="s4">
+          <div class="snum">Algorithm 3</div>
+          <h2>Fixed window counter</h2>
+          <p class="lede">
+            Chop time into fixed windows (8:00–8:05, 8:05–8:10, …) and give each
+            window a counter, say 3. Each request uses one. When it hits 0,
+            reject until the next window starts and the counter resets.
+          </p>
+          <figure>
+            <div class="dg" data-d="fixed"></div>
+            <figcaption>
+              Each 5-minute window allows 3 requests. Three arrive just before
+              8:05 and three just after, so 6 requests get through in about a
+              minute, double the intended rate.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              Window length and count come from config, for example 5 minutes
+              and 3 requests.
+            </li>
+            <li>It's very simple: one counter per window.</li>
+          </ul>
+          <h3>
+            Disadvantage: bursts at the edges
+            <span class="flag">★ always mention this</span>
+          </h3>
+          <p>
+            If 3 requests arrive at the very end of one window and 3 more at the
+            very start of the next, each window sees only 3, so all 6 are
+            allowed. But looking at any 5-minute stretch across that boundary,
+            there were <b>6 requests: double the limit</b>. Your system may not
+            be ready for that.
+          </p>
+        </section>
+
+        <section class="step" id="s5">
+          <div class="snum">Algorithm 4</div>
+          <h2>Sliding window log</h2>
+          <p class="lede">
+            Instead of fixed windows, keep a <b>log of timestamps</b>. For each
+            request, look back exactly one window (say 1 minute) from
+            <em>now</em>. The window <b>slides</b> with time, so there are no
+            edges to exploit.
+          </p>
+          <p>
+            <b>Rule:</b> 3 requests per minute. The log is kept sorted by time.
+          </p>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Request at</th>
+                  <th>Step</th>
+                  <th>Log after</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="mono">10:00:10</td>
+                  <td>log it · size 1</td>
+                  <td class="mono">:10</td>
+                  <td><span class="pill yes">allowed</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:00:20</td>
+                  <td>within 1 min · size 2</td>
+                  <td class="mono">:10 :20</td>
+                  <td><span class="pill yes">allowed</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:00:40</td>
+                  <td>within 1 min · size 3</td>
+                  <td class="mono">:10 :20 :40</td>
+                  <td><span class="pill yes">allowed</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:00:45</td>
+                  <td>
+                    still within 1 min, size already 3 →
+                    <b>but it's still logged</b>
+                  </td>
+                  <td class="mono">:10 :20 :40 :45</td>
+                  <td><span class="pill no">429 denied</span></td>
+                </tr>
+                <tr>
+                  <td class="mono">10:01:20</td>
+                  <td>
+                    window is now 10:00:20–10:01:20 · <b>remove</b> timestamps
+                    from the top that fall outside
+                  </td>
+                  <td class="mono">:40 :45 1:20</td>
+                  <td>
+                    count now under 3 → <span class="pill yes">allowed</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ul>
+            <li>
+              <b>Fixes</b> the fixed-window edge problem. The limit holds over
+              <em>any</em> 1-minute span.
+            </li>
+            <li>
+              <b>Disadvantage: memory.</b> It stores a timestamp for every
+              request, <b>even the denied ones</b>. For busy users that's a lot
+              of storage.
+            </li>
+          </ul>
+        </section>
+
+        <section class="step" id="s6">
+          <div class="snum">Algorithm 5</div>
+          <h2>Sliding window counter</h2>
+          <p class="lede">
+            The best of both: the <b>cheap counters</b> of the fixed window,
+            plus the <b>no-edge-burst</b> behaviour of the sliding log. Keep a
+            count per fixed window, and <b>estimate</b> how many requests fall
+            in the sliding window using a weighted share of the previous window.
+          </p>
+          <figure>
+            <div class="dg" data-d="swc"></div>
+            <figcaption>
+              The rolling 1-minute window covers the last 10 s of the previous
+              window plus the current one. The previous window had 6 requests,
+              so about 6 × 10/60 = 1 of them falls inside.
+            </figcaption>
+          </figure>
+          <div class="calc">
+            <div>rule: <b>5 requests per minute</b></div>
+            <div>current window so far = <b>2</b> requests</div>
+            <div>previous window total = 6 requests</div>
+            <div>overlap with previous window = 10 s of 60 s</div>
+            <div>
+              estimate = 2 + 6 × (10 / 60) = 2 + 1 = <b>3</b> → 3 ≤ 5 →
+              <b>allowed</b>
+            </div>
+          </div>
+          <p>
+            It assumes the previous window's requests were spread evenly, so
+            it's an approximation, but a very good one (see "Good to know").
+          </p>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>Algorithm</th>
+                  <th>Memory</th>
+                  <th>Allows bursts?</th>
+                  <th>Weak spot</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Token bucket</td>
+                  <td>2 numbers per user</td>
+                  <td>Yes, up to capacity</td>
+                  <td>Tuning capacity and refill rate</td>
+                </tr>
+                <tr>
+                  <td>Leaking bucket</td>
+                  <td>A queue per user</td>
+                  <td>No, smooths to a constant rate</td>
+                  <td>Bursty apps: old requests block new ones</td>
+                </tr>
+                <tr>
+                  <td>Fixed window counter</td>
+                  <td>1 counter per window</td>
+                  <td>Yes, double at window edges</td>
+                  <td>Edge bursts</td>
+                </tr>
+                <tr>
+                  <td>Sliding window log</td>
+                  <td>1 timestamp per request</td>
+                  <td>No, exact</td>
+                  <td>Memory (denied requests logged too)</td>
+                </tr>
+                <tr>
+                  <td>Sliding window counter</td>
+                  <td>2 counters</td>
+                  <td>Barely, approximate</td>
+                  <td>Assumes an even spread in the previous window</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="step" id="s7">
+          <div class="snum">High-level design</div>
+          <h2>Where the rate limiter lives</h2>
+          <figure>
+            <div class="dg" data-d="hld"></div>
+            <figcaption>
+              Requests pass through the rate limiter (often inside an API
+              gateway). It reads rules from a cache loaded from config files,
+              keeps counters in Redis, and either forwards the request or
+              returns 429.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Placement:</b> either inside the server, or as a separate layer
+              between client and server. If you already have an
+              <b>API gateway</b> (which handles authentication and so on), host
+              the rate limiter there. Discuss with the interviewer, since it
+              depends on the company's setup.
+            </li>
+            <li>
+              <b>Counters and queues in Redis:</b> every request reads and
+              updates a counter. A normal database is far too slow for that, so
+              use an in-memory store.
+            </li>
+            <li>
+              <b>Rules in config files:</b> "3 per minute", "5-minute windows"
+              and so on are config. They live on disk but <b>rarely change</b>,
+              so load them into a <b>cache</b> at startup, and the limiter reads
+              from the cache.
+            </li>
+            <li>
+              <b>Result:</b> forward the request to the server, or return
+              <b>429</b>.
+            </li>
+          </ul>
+          <p>
+            The lecturer's emphasis: the boxes are simple. The
+            <b>algorithms</b> are what interviewers dig into.
+          </p>
+        </section>
+
+        <section class="step" id="s8">
+          <div class="snum">Follow-up question</div>
+          <h2>Many rate limiters, one Redis</h2>
+          <figure>
+            <div class="dg" data-d="dist"></div>
+            <figcaption>
+              Several rate limiter instances share one Redis. Two parallel
+              requests both read counter = 2 before either writes, so both are
+              allowed, and the limit is broken.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              At scale you run <b>several rate limiter instances</b>. A client's
+              requests may hit any of them.
+            </li>
+            <li>
+              They all use one <b>centralised Redis</b>, so everyone sees the
+              same counters.
+            </li>
+            <li>
+              <b>Follow-up: atomicity.</b> If two requests from the same user
+              reach RL1 and RL2 at the same moment, both read "2 tokens left",
+              both allow, and both write. That's a <b>race condition</b>.
+            </li>
+            <li>
+              <b>Answer:</b> make the read-check-update <b>atomic</b> in Redis.
+              Existing solutions do this, so you don't build it yourself. The
+              cost is a <b>little extra latency</b>. If the interviewer accepts
+              that, use it. Otherwise it's a known limitation.
+            </li>
+          </ul>
+        </section>
+
+        <section class="step" id="extra">
+          <div class="snum">
+            Beyond the course
+            <span class="flag">good to know as an engineer</span>
+          </div>
+          <h2>Good to know as an engineer</h2>
+          <h3>How Redis makes it atomic in practice</h3>
+          <ul>
+            <li>
+              <b>Fixed window:</b> <code>INCR rate:user42:202610011005</code>,
+              then <code>EXPIRE</code> it after the window. <code>INCR</code> is
+              atomic on its own, so two limiters can't both read the same old
+              value.
+            </li>
+            <li>
+              <b>Token bucket / sliding window:</b> put the read-check-update
+              logic in a small <b>Lua script</b>. Redis runs each script as one
+              atomic step. This is what Stripe describes using with Redis for
+              its limiters.
+            </li>
+          </ul>
+          <h3>Tell clients what happened</h3>
+          <ul>
+            <li>
+              Return <b>429</b> with a <code>Retry-After</code> header (seconds
+              to wait).
+            </li>
+            <li>
+              Many APIs also send <code>X-RateLimit-Limit</code>,
+              <code>X-RateLimit-Remaining</code> and
+              <code>X-RateLimit-Reset</code> on every response, so well-behaved
+              clients slow down before hitting the wall. (An IETF draft
+              standardises these as <code>RateLimit-*</code> headers.)
+            </li>
+            <li>
+              Clients should back off exponentially with jitter, and honour
+              <code>Retry-After</code>.
+            </li>
+          </ul>
+          <h3>What to limit by</h3>
+          <p>
+            User ID or API key for logged-in traffic, and IP address for
+            anonymous traffic. Beware that many users can share one IP behind an
+            office NAT or mobile carrier. Different endpoints usually get
+            different limits: login attempts are far stricter than reads.
+          </p>
+          <h3>Layers of limiting</h3>
+          <p>
+            Real systems limit at several layers: a CDN or WAF at the edge stops
+            floods before they reach you (lecture 5), the API gateway enforces
+            per-user quotas, and individual services protect themselves with
+            <b>concurrency limits and load shedding</b>. Stripe runs a
+            request-rate limiter, a <b>concurrent-requests limiter</b>, and load
+            shedders that keep capacity for critical traffic.
+          </p>
+          <h3>Real-world choices</h3>
+          <ul>
+            <li>
+              <b>Stripe</b> and Amazon use the <b>token bucket</b> for API
+              request rates.
+            </li>
+            <li>
+              <b>Cloudflare</b> uses the <b>sliding window counter</b> at its
+              edge. Across 400 million requests it measured just
+              <b>0.003%</b> wrongly allowed or limited, using only two counters
+              per key.
+            </li>
+          </ul>
+          <h3>Hard vs soft limits, and failing open</h3>
+          <p>
+            A hard limit never lets traffic over. A soft limit lets a little
+            over briefly. And decide what happens if Redis is down:
+            <b>fail open</b> (allow everything, so availability wins) or
+            <b>fail closed</b> (reject everything, so protection wins). Most
+            public APIs fail open.
+          </p>
+        </section>
+
+        <section class="step" id="revise">
+          <div class="snum">Check yourself</div>
+          <h2>Revision questions</h2>
+          <p class="lede">Try answering out loud before opening each one.</p>
+          <details>
+            <summary>Why do we need a rate limiter?</summary>
+            <p>
+              To stop floods such as DDoS, or one abusive client, from using up
+              a server's limited resources and taking it down for genuine users.
+            </p>
+          </details>
+          <details>
+            <summary>Explain the token bucket.</summary>
+            <p>
+              A bucket with a capacity holds tokens, and a refiller adds them at
+              a fixed rate (extras overflow). Each request takes one token. With
+              none left, it's rejected with 429.
+            </p>
+          </details>
+          <details>
+            <summary>Token bucket vs leaking bucket?</summary>
+            <p>
+              The token bucket allows bursts up to its capacity. The leaking
+              bucket queues requests and processes them at a constant rate,
+              which hurts legitimately bursty apps because old requests block
+              new ones.
+            </p>
+          </details>
+          <details>
+            <summary>What's wrong with the fixed window counter?</summary>
+            <p>
+              Requests bunched at the end of one window and the start of the
+              next both pass, so up to double the limit can get through around
+              the boundary.
+            </p>
+          </details>
+          <details>
+            <summary>Sliding window log: advantage and disadvantage?</summary>
+            <p>
+              It's exact over any rolling window, with no edge bursts. But it
+              stores a timestamp for every request, including denied ones, so it
+              uses a lot of memory.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Compute: rule 5/min, current window 2, previous window 6, overlap
+              10 s.
+            </summary>
+            <p>2 + 6 × 10/60 = 2 + 1 = 3 ≤ 5, so the request is allowed.</p>
+          </details>
+          <details>
+            <summary>Where do counters and rules live in the design?</summary>
+            <p>
+              Counters and queues live in Redis, which is in-memory and fast.
+              Rules live in config files that are loaded into a cache at
+              startup.
+            </p>
+          </details>
+          <details>
+            <summary>
+              Multiple rate limiters share one Redis. What can go wrong?
+            </summary>
+            <p>
+              A race condition: two limiters read the same counter at once and
+              both allow. The fix is atomic operations (INCR, Lua scripts), at
+              the cost of a little latency.
+            </p>
+          </details>
+
+          <h3>Sources used to expand these notes</h3>
+          <ul class="sources">
+            <li>
+              <a
+                href="https://stripe.com/blog/rate-limiters"
+                target="_blank"
+                rel="noopener"
+                >Stripe: Scaling your API with rate limiters</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://medium.com/cloudflare-blog/how-we-built-rate-limiting-capable-of-scaling-to-millions-of-domains-3bcc875e16a6"
+                target="_blank"
+                rel="noopener"
+                >Cloudflare: How we built rate limiting capable of scaling to
+                millions of domains</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://bytebytego.com/courses/system-design-interview/design-a-rate-limiter"
+                target="_blank"
+                rel="noopener"
+                >ByteByteGo: Design a rate limiter</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://newsletter.systemdesign.one/p/rate-limiter"
+                target="_blank"
+                rel="noopener"
+                >System Design Newsletter: How Stripe does rate limiting</a
+              >
+            </li>
+          </ul>
+          <p class="foot">
+            Built from the lecture's audio transcript and whiteboard frames (34
+            min). Sections marked "Good to know" come from outside the video.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        // helpers for timeline diagrams
+        function tick(x, y) {
+          return { t: "line", x: x, y: y - 7, w: 0, h: 14 };
+        }
+        function dot(x, y, l, c) {
+          return {
+            t: "circle",
+            c: c || "mq",
+            x: x - 9,
+            y: y - 9,
+            w: 18,
+            h: 18,
+            l: l || "",
+          };
+        }
+
+        window.DIAGRAMS = {
+          hero: {
+            h: 190,
+            alt: "Client requests pass through a rate limiter; allowed ones reach the server, extra ones get 429",
+            n: [
+              { t: "client", x: 10, y: 40, w: 120, h: 52, l: "Clients" },
+              {
+                t: "lb",
+                x: 240,
+                y: 34,
+                w: 160,
+                h: 64,
+                l: "Rate limiter",
+                s: "e.g. 3 / minute",
+              },
+              { t: "app", x: 510, y: 40, w: 120, h: 52, l: "Server" },
+              {
+                t: "cache",
+                x: 250,
+                y: 134,
+                w: 140,
+                h: 44,
+                l: "429",
+                s: "Too Many Requests",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [130, 66],
+                  [240, 66],
+                ],
+              },
+              {
+                p: [
+                  [400, 66],
+                  [510, 66],
+                ],
+                good: 1,
+                l: "allowed",
+                at: [455, 58],
+              },
+              {
+                p: [
+                  [320, 98],
+                  [320, 134],
+                ],
+                bad: 1,
+                l: "over limit",
+                at: [330, 120],
+                a: "start",
+              },
+            ],
+          },
+
+          ddos: {
+            h: 230,
+            alt: "An attacker floods a server with requests; the server runs out of resources and a genuine user is rejected",
+            n: [
+              {
+                t: "client",
+                c: "cache",
+                x: 10,
+                y: 20,
+                w: 130,
+                h: 52,
+                l: "Attacker",
+                s: "lakhs of requests",
+              },
+              {
+                t: "app",
+                x: 350,
+                y: 50,
+                w: 150,
+                h: 76,
+                l: "Server",
+                s: "limited RAM / CPU / disk",
+              },
+              { t: "client", x: 10, y: 150, w: 130, h: 52, l: "Genuine user" },
+            ],
+            e: [
+              {
+                p: [
+                  [140, 34],
+                  [350, 64],
+                ],
+                bad: 1,
+              },
+              {
+                p: [
+                  [140, 46],
+                  [350, 82],
+                ],
+                bad: 1,
+              },
+              {
+                p: [
+                  [140, 58],
+                  [350, 100],
+                ],
+                bad: 1,
+              },
+              {
+                p: [
+                  [140, 70],
+                  [350, 118],
+                ],
+                bad: 1,
+              },
+              {
+                p: [
+                  [140, 176],
+                  [350, 176],
+                ],
+                bad: 1,
+                dash: 1,
+                noarrow: 1,
+                cut: [245, 176],
+                l: "request declined",
+                at: [245, 200],
+              },
+            ],
+            notes: [
+              { x: 510, y: 150, l: "overwhelmed → down", a: "start", bad: 1 },
+            ],
+          },
+
+          token: {
+            h: 230,
+            alt: "Token bucket: a refiller adds tokens to a bucket; a request takes a token if available, else gets 429",
+            n: [
+              {
+                t: "lb",
+                x: 10,
+                y: 10,
+                w: 150,
+                h: 50,
+                l: "Refiller",
+                s: "+2 tokens / min",
+              },
+              {
+                t: "mq",
+                x: 10,
+                y: 96,
+                w: 150,
+                h: 80,
+                l: "Bucket · capacity 4",
+                slots: 1,
+              },
+              { t: "client", x: 340, y: 8, w: 120, h: 40, l: "Request" },
+              { t: "lb", x: 340, y: 104, w: 120, h: 60, l: "Token left?" },
+              {
+                t: "app",
+                x: 510,
+                y: 40,
+                w: 120,
+                h: 48,
+                l: "Server",
+                s: "1 token taken",
+              },
+              {
+                t: "cache",
+                x: 510,
+                y: 168,
+                w: 120,
+                h: 48,
+                l: "429",
+                s: "denied",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [85, 60],
+                  [85, 96],
+                ],
+                l: "refill",
+                at: [95, 82],
+                a: "start",
+              },
+              {
+                p: [
+                  [400, 48],
+                  [400, 104],
+                ],
+              },
+              {
+                p: [
+                  [160, 134],
+                  [340, 134],
+                ],
+                both: 1,
+                dash: 1,
+                l: "check / take a token",
+                at: [250, 126],
+              },
+              {
+                p: [
+                  [460, 122],
+                  [510, 70],
+                ],
+                good: 1,
+                l: "yes",
+                at: [480, 88],
+                a: "end",
+              },
+              {
+                p: [
+                  [460, 148],
+                  [510, 192],
+                ],
+                bad: 1,
+                l: "no",
+                at: [480, 182],
+                a: "end",
+              },
+            ],
+            notes: [{ x: 85, y: 200, l: "extra tokens overflow", a: "middle" }],
+          },
+
+          leaky: {
+            h: 230,
+            alt: "Leaking bucket: request checks if queue is full; if not it is queued and processed at a constant rate; if full it gets 429",
+            n: [
+              { t: "client", x: 10, y: 70, w: 100, h: 46, l: "Request" },
+              { t: "lb", x: 146, y: 60, w: 124, h: 66, l: "Queue full?" },
+              {
+                t: "mq",
+                x: 306,
+                y: 54,
+                w: 170,
+                h: 78,
+                l: "FIFO queue",
+                slots: 1,
+              },
+              {
+                t: "app",
+                x: 516,
+                y: 66,
+                w: 114,
+                h: 54,
+                l: "Server",
+                s: "constant rate",
+              },
+              {
+                t: "cache",
+                x: 148,
+                y: 170,
+                w: 120,
+                h: 46,
+                l: "429",
+                s: "denied",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [110, 93],
+                  [146, 93],
+                ],
+              },
+              {
+                p: [
+                  [270, 93],
+                  [306, 93],
+                ],
+                l: "no",
+                at: [288, 85],
+              },
+              {
+                p: [
+                  [476, 93],
+                  [516, 93],
+                ],
+                good: 1,
+                l: "leak",
+                at: [496, 85],
+              },
+              {
+                p: [
+                  [208, 126],
+                  [208, 170],
+                ],
+                bad: 1,
+                l: "yes",
+                at: [218, 152],
+                a: "start",
+              },
+            ],
+          },
+
+          fixed: {
+            h: 190,
+            alt: "Fixed windows of 5 minutes allow 3 requests each; 3 at the end of one window and 3 at the start of the next let 6 through",
+            n: [
+              { t: "line", x: 40, y: 120, w: 560, h: 0 },
+              tick(40, 120),
+              tick(227, 120),
+              tick(413, 120),
+              tick(600, 120),
+              dot(178, 92),
+              dot(196, 92),
+              dot(214, 92),
+              dot(240, 92),
+              dot(258, 92),
+              dot(276, 92),
+            ],
+            notes: [
+              { x: 40, y: 146, l: "8:00", a: "middle" },
+              { x: 227, y: 146, l: "8:05", a: "middle" },
+              { x: 413, y: 146, l: "8:10", a: "middle" },
+              { x: 600, y: 146, l: "8:15", a: "middle" },
+              { x: 133, y: 172, l: "window 1 · 3 / 3 ✓", a: "middle" },
+              { x: 320, y: 172, l: "window 2 · 3 / 3 ✓", a: "middle" },
+              {
+                x: 227,
+                y: 52,
+                l: "6 requests in about a minute",
+                a: "middle",
+                bad: 1,
+              },
+              {
+                x: 227,
+                y: 68,
+                l: "(limit is 3 per 5 minutes)",
+                a: "middle",
+                bad: 1,
+              },
+            ],
+          },
+
+          swc: {
+            h: 250,
+            alt: "Sliding window counter: rolling window covers last 10 seconds of previous window (6 requests) and current window (2 requests)",
+            n: [
+              { t: "line", x: 60, y: 150, w: 540, h: 0 },
+              tick(60, 150),
+              tick(330, 150),
+              tick(600, 150),
+              {
+                t: "zone",
+                x: 285,
+                y: 96,
+                w: 270,
+                h: 80,
+                l: "ROLLING 1-MIN WINDOW",
+              },
+              dot(90, 130),
+              dot(130, 130),
+              dot(170, 130),
+              dot(215, 130),
+              dot(255, 130),
+              dot(305, 130),
+              dot(380, 130, "", "app"),
+              dot(450, 130, "", "app"),
+            ],
+            e: [
+              {
+                p: [
+                  [555, 206],
+                  [555, 180],
+                ],
+                l: "now",
+                at: [555, 222],
+              },
+            ],
+            notes: [
+              { x: 60, y: 198, l: "8:01", a: "middle" },
+              { x: 330, y: 198, l: "8:02", a: "middle" },
+              { x: 600, y: 198, l: "8:03", a: "middle" },
+              { x: 180, y: 80, l: "previous window: 6 requests", a: "middle" },
+              { x: 440, y: 80, l: "current: 2 so far", a: "middle" },
+              { x: 307, y: 236, l: "10 s overlap", a: "middle", strong: 1 },
+            ],
+          },
+
+          hld: {
+            h: 280,
+            alt: "Client to rate limiter to API servers; rate limiter uses Redis for counters and a rules cache loaded from config files; rejected requests get 429",
+            n: [
+              { t: "client", x: 10, y: 96, w: 100, h: 52, l: "Client" },
+              {
+                t: "lb",
+                x: 170,
+                y: 90,
+                w: 150,
+                h: 64,
+                l: "Rate limiter",
+                s: "in API gateway",
+              },
+              { t: "app", x: 480, y: 90, w: 150, h: 64, l: "API servers" },
+              {
+                t: "app",
+                c: "cdn",
+                x: 330,
+                y: 6,
+                w: 120,
+                h: 48,
+                l: "Rules cache",
+              },
+              {
+                t: "db",
+                x: 500,
+                y: 2,
+                w: 130,
+                h: 56,
+                l: "Config files",
+                s: "rules · on disk",
+              },
+              {
+                t: "db",
+                c: "cache",
+                x: 180,
+                y: 206,
+                w: 130,
+                h: 62,
+                l: "Redis",
+                s: "counters · queues",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [110, 112],
+                  [170, 112],
+                ],
+                l: "request",
+                at: [140, 104],
+              },
+              {
+                p: [
+                  [170, 136],
+                  [110, 136],
+                ],
+                bad: 1,
+                l: "429",
+                at: [140, 156],
+              },
+              {
+                p: [
+                  [320, 122],
+                  [480, 122],
+                ],
+                good: 1,
+                l: "allowed",
+                at: [400, 114],
+              },
+              {
+                p: [
+                  [500, 30],
+                  [450, 30],
+                ],
+                l: "load",
+                at: [475, 22],
+              },
+              {
+                p: [
+                  [380, 54],
+                  [290, 90],
+                ],
+                l: "rules",
+                at: [350, 80],
+                a: "start",
+              },
+              {
+                p: [
+                  [245, 154],
+                  [245, 206],
+                ],
+                both: 1,
+                l: "read / update",
+                at: [255, 184],
+                a: "start",
+              },
+            ],
+          },
+
+          dist: {
+            h: 290,
+            alt: "Three rate limiters share one Redis; two read the same counter value at the same moment",
+            n: [
+              { t: "client", x: 10, y: 116, w: 100, h: 52, l: "Client" },
+              { t: "lb", x: 190, y: 20, w: 120, h: 46, l: "Rate limiter 1" },
+              { t: "lb", x: 190, y: 118, w: 120, h: 46, l: "Rate limiter 2" },
+              { t: "lb", x: 190, y: 216, w: 120, h: 46, l: "Rate limiter 3" },
+              {
+                t: "db",
+                c: "cache",
+                x: 450,
+                y: 98,
+                w: 170,
+                h: 84,
+                l: "Redis",
+                s: "shared counter = 2",
+              },
+            ],
+            e: [
+              {
+                p: [
+                  [110, 130],
+                  [190, 43],
+                ],
+              },
+              {
+                p: [
+                  [110, 142],
+                  [190, 141],
+                ],
+              },
+              {
+                p: [
+                  [110, 154],
+                  [190, 239],
+                ],
+              },
+              {
+                p: [
+                  [310, 43],
+                  [460, 112],
+                ],
+                bad: 1,
+                l: "read 2",
+                at: [390, 66],
+              },
+              {
+                p: [
+                  [310, 141],
+                  [450, 141],
+                ],
+                bad: 1,
+                l: "read 2",
+                at: [380, 133],
+              },
+              {
+                p: [
+                  [310, 239],
+                  [460, 170],
+                ],
+                dash: 1,
+              },
+            ],
+            notes: [
+              {
+                x: 320,
+                y: 284,
+                l: "both see 2 → both allow → limit broken (race condition)",
+                a: "middle",
+                bad: 1,
+              },
+            ],
+          },
+        };
+      })();
+    </script>
+    <script>
+      (function () {
+        var D = window.DIAGRAMS || {};
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        }
+        function label(n, cx, ty) {
+          var o = "";
+          if (n.s) {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty - 3) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            o +=
+              '<text class="ns" x="' +
+              cx +
+              '" y="' +
+              (ty + 12) +
+              '" text-anchor="middle">' +
+              esc(n.s) +
+              "</text>";
+          } else if (n.l) {
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (ty + 5) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+          }
+          return o;
+        }
+        function node(n) {
+          var o = "",
+            cx = n.x + n.w / 2,
+            cls = "n t-" + (n.c || n.t) + (n.down ? " down" : "");
+          if (n.t === "zone") {
+            return (
+              '<rect class="zone' +
+              (n.bad ? " bad" : "") +
+              '" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="12"/>' +
+              (n.l
+                ? '<text class="zl' +
+                  (n.bad ? " bad" : "") +
+                  '" x="' +
+                  (n.x + 12) +
+                  '" y="' +
+                  (n.y + 17) +
+                  '">' +
+                  esc(n.l) +
+                  "</text>"
+                : "")
+            );
+          }
+          if (n.t === "line") {
+            // plain vertical/horizontal rule, e.g. sequence-diagram lifeline
+            return (
+              '<line class="life" x1="' +
+              n.x +
+              '" y1="' +
+              n.y +
+              '" x2="' +
+              (n.x + n.w) +
+              '" y2="' +
+              (n.y + n.h) +
+              '"/>'
+            );
+          }
+          if (n.t === "ring") {
+            // hash ring: centre (cx,cy), radius r, optional tick count + position numbers
+            var s =
+              '<circle class="ringc" cx="' +
+              n.cx +
+              '" cy="' +
+              n.cy +
+              '" r="' +
+              n.r +
+              '"/>';
+            for (var i = 0; i < (n.ticks || 0); i++) {
+              var a = ((-90 + (i * 360) / n.ticks) * Math.PI) / 180,
+                c = Math.cos(a),
+                si = Math.sin(a);
+              s +=
+                '<line class="tick" x1="' +
+                (n.cx + (n.r - 5) * c) +
+                '" y1="' +
+                (n.cy + (n.r - 5) * si) +
+                '" x2="' +
+                (n.cx + (n.r + 5) * c) +
+                '" y2="' +
+                (n.cy + (n.r + 5) * si) +
+                '"/>';
+              if (n.nums)
+                s +=
+                  '<text class="ringn" x="' +
+                  (n.cx + (n.r - 30) * c) +
+                  '" y="' +
+                  (n.cy + (n.r - 30) * si + 4) +
+                  '" text-anchor="middle">' +
+                  i +
+                  "</text>";
+            }
+            if (n.l)
+              s +=
+                '<text class="nt" x="' +
+                n.cx +
+                '" y="' +
+                (n.cy + 4) +
+                '" text-anchor="middle">' +
+                esc(n.l) +
+                "</text>";
+            return s;
+          }
+          var ty = n.y + n.h / 2;
+          if (n.t === "db") {
+            var e = 8,
+              x = n.x,
+              y = n.y,
+              w = n.w,
+              h = n.h;
+            o +=
+              '<path class="' +
+              cls.replace("t-db", "t-" + (n.c || "db")) +
+              '" d="M' +
+              x +
+              "," +
+              (y + e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              (x + w) +
+              "," +
+              (y + e) +
+              " V" +
+              (y + h - e) +
+              " A" +
+              w / 2 +
+              "," +
+              e +
+              " 0 0 1 " +
+              x +
+              "," +
+              (y + h - e) +
+              ' Z"/>';
+            o +=
+              '<ellipse class="' +
+              cls.replace("t-db", "t-" + (n.c || "db")) +
+              '" cx="' +
+              cx +
+              '" cy="' +
+              (y + e) +
+              '" rx="' +
+              w / 2 +
+              '" ry="' +
+              e +
+              '"/>';
+            ty += e / 2;
+          } else if (n.t === "circle") {
+            o +=
+              '<circle class="' +
+              cls.replace("t-circle", "t-" + (n.c || "app")) +
+              '" cx="' +
+              cx +
+              '" cy="' +
+              ty +
+              '" r="' +
+              n.w / 2 +
+              '"/>';
+          } else {
+            o +=
+              '<rect class="' +
+              cls +
+              '" x="' +
+              n.x +
+              '" y="' +
+              n.y +
+              '" width="' +
+              n.w +
+              '" height="' +
+              n.h +
+              '" rx="9"/>';
+          }
+          if (n.slots) {
+            var pad = 16,
+              cw = (n.w - pad * 2 - 4 * 6) / 5,
+              cy = n.y + n.h - 30;
+            for (var i = 0; i < 5; i++)
+              o +=
+                '<rect class="slot" x="' +
+                (n.x + pad + i * (cw + 6)) +
+                '" y="' +
+                cy +
+                '" width="' +
+                cw +
+                '" height="16" rx="3"/>';
+            o +=
+              '<text class="nl" x="' +
+              cx +
+              '" y="' +
+              (n.y + 24) +
+              '" text-anchor="middle">' +
+              esc(n.l) +
+              "</text>";
+            return o;
+          }
+          o += label(n, cx, ty);
+          if (n.down) {
+            o +=
+              '<text class="downx" x="' +
+              (n.w < 90 ? n.x + n.w / 2 : n.x + n.w - 4) +
+              '" y="' +
+              (n.w < 90 ? n.y - 4 : n.y + 14) +
+              '" text-anchor="' +
+              (n.w < 90 ? "middle" : "end") +
+              '">DOWN</text>';
+          }
+          return o;
+        }
+        function svg(key, d) {
+          var mid = "ah-" + key,
+            mbad = "ahb-" + key;
+          var o =
+            '<svg viewBox="0 0 640 ' +
+            d.h +
+            '" role="img" aria-label="' +
+            esc(d.alt || "Diagram") +
+            '">';
+          o +=
+            '<defs><marker id="' +
+            mid +
+            '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>' +
+            '<marker id="' +
+            mbad +
+            '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ahb" d="M0,0 L10,5 L0,10 z"/></marker></defs>';
+          d.n.forEach(function (n) {
+            if (n.t === "zone" || n.t === "line" || n.t === "ring")
+              o += node(n);
+          });
+          (d.e || []).forEach(function (e) {
+            var pts = e.p
+              .map(function (p) {
+                return p.join(",");
+              })
+              .join(" ");
+            var m = e.bad ? mbad : mid;
+            o +=
+              '<polyline class="ed' +
+              (e.dash ? " dash" : "") +
+              (e.bad ? " bad" : "") +
+              (e.good ? " good" : "") +
+              '" points="' +
+              pts +
+              '"' +
+              (e.noarrow ? "" : ' marker-end="url(#' + m + ')"') +
+              (e.both ? ' marker-start="url(#' + m + ')"' : "") +
+              "/>";
+            if (e.cut) {
+              // a ✕ on a broken link
+              var c = e.cut;
+              o +=
+                '<text class="cutx" x="' +
+                c[0] +
+                '" y="' +
+                (c[1] + 6) +
+                '" text-anchor="middle">✕</text>';
+            }
+          });
+          d.n.forEach(function (n) {
+            if (n.t !== "zone" && n.t !== "line" && n.t !== "ring")
+              o += node(n);
+          });
+          (d.e || []).forEach(function (e) {
+            if (e.l)
+              o +=
+                '<text class="el' +
+                (e.bad ? " bad" : "") +
+                '" x="' +
+                e.at[0] +
+                '" y="' +
+                e.at[1] +
+                '" text-anchor="' +
+                (e.a || "middle") +
+                '">' +
+                esc(e.l) +
+                "</text>";
+          });
+          (d.notes || []).forEach(function (t) {
+            o +=
+              '<text class="nt' +
+              (t.bad ? " bad" : "") +
+              (t.strong ? " strong" : "") +
+              '" x="' +
+              t.x +
+              '" y="' +
+              t.y +
+              '" text-anchor="' +
+              (t.a || "start") +
+              '">' +
+              esc(t.l) +
+              "</text>";
+          });
+          return o + "</svg>";
+        }
+        document.querySelectorAll(".dg[data-d]").forEach(function (el) {
+          var k = el.getAttribute("data-d");
+          if (D[k]) el.innerHTML = svg(k, D[k]);
+        });
+        var links = [].slice.call(document.querySelectorAll("#rail a"));
+        if (links.length && "IntersectionObserver" in window) {
+          var io = new IntersectionObserver(
+            function (ents) {
+              ents.forEach(function (en) {
+                if (en.isIntersecting) {
+                  links.forEach(function (a) {
+                    a.classList.toggle(
+                      "on",
+                      a.getAttribute("href") === "#" + en.target.id,
+                    );
+                  });
+                }
+              });
+            },
+            { rootMargin: "-30% 0px -60% 0px" },
+          );
+          document.querySelectorAll("main .step").forEach(function (sec) {
+            io.observe(sec);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>
